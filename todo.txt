@@ -1,0 +1,1 @@
+- Extract the messages to an external resource file to be able to add i18n
