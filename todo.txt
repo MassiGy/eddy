@@ -1,4 +1,9 @@
-- handle backspace after arrow keys based navigation
-- right arrow on extreme should go to beginning of new line
-- Transform the JumpList to a JumpTree to implement the undo tree, or you can use two jumlists one for 
-forward movements (DO) and the other one from backward movements (UNDO)
+- handle backspace after arrow keys 
+based navigation
+- right arrow on extreme should go 
+to beginning of new line
+- Transform the JumpList to a JumpTree 
+to implement the undo tree, or you can 
+use two jumlists one for forward movements 
+(DO) and the other one from backward 
+movements (UNDO)

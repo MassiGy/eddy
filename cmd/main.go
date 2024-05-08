@@ -255,13 +255,15 @@ func handleBackSpace() {
 func handleKeyUp() {
 	if oy > 0 {
 		oy--
+		if ox-offset-1 > linesCharCount[oy] {
+			ox = linesCharCount[oy] + offset + 1
+		}
 	}
 }
 func handleKeyDown() {
 	if linesCharCount[oy+1] > 0 {
 		oy++
-
-		if ox > linesCharCount[oy] {
+		if ox-offset-1 > linesCharCount[oy] {
 			ox = linesCharCount[oy] + offset + 1
 		}
 	}
@@ -270,21 +272,18 @@ func handleKeyDown() {
 func handleKeyLeft() {
 	if ox > offset+1 {
 		ox--
-		s.ShowCursor(ox, oy)
-
 	} else if oy > 0 && linesCharCount[oy-1] > 1 {
-
 		oy--
 		ox = linesCharCount[oy] + offset + 1
-
 	}
 }
 
 func handleKeyRight() {
 	if ox-offset-1 < linesCharCount[oy] {
 		ox++
-	} else {
-		handleKeyDown()
+	} else if linesCharCount[oy+1] > 0 {
+		ox = offset + 1
+		oy++
 	}
 }
 
