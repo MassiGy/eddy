@@ -24,7 +24,7 @@ run:
 	./bin/${BINARY_NAME}
 
 runsrc:
-	CURR_DEV_ENV=dev go run ./cmd/main.go
+	CURR_DEV_ENV=dev DEBUG=true go run ./cmd/main.go
 
 
 install:
