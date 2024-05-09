@@ -12,7 +12,8 @@ clean:
 	rm -rf bin/*
 
 bin: 
-	go build -ldflags "-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}" cmd/main.go -o bin/${BINARY_NAME}
+	#go build -ldflags "-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}" -o bin/${BINARY_NAME} cmd/main.go 
+	go build -o bin/${BINARY_NAME} cmd/main.go 
 
 
 binstatic:
@@ -24,6 +25,7 @@ run:
 	./bin/${BINARY_NAME}
 
 runsrc:
+	#CURR_DEV_ENV=dev  go run ./cmd/main.go
 	CURR_DEV_ENV=dev DEBUG=true go run ./cmd/main.go
 
 

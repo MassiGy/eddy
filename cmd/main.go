@@ -1,307 +1,198 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"log"
 	"os"
-	"slices"
 
-	"github.com/MassiGy/eddy/types"
-	"github.com/gdamore/tcell/v2"
+	"github.com/mattn/go-runewidth"
+	"github.com/nsf/termbox-go"
 )
 
-// will be populated by the build command
-var version string
-var binary_name string
+var ROWS, COLS int
+var QUIT bool = false
+var LINE_NUMBER_COL_WIDTH int = 5
+var currentCol, currentRow int
+var offsetX, offsetY int
 
-var s tcell.Screen
-var defStyle, boxStyle tcell.Style
+var textBuffer = [][]rune{}
+var source_file string
 
-var err error
-var logFile *os.File
+func print_message(col, row int, fg, bg termbox.Attribute, msg string) {
+	for _, ch := range msg {
+		termbox.SetCell(col, row, ch, fg, bg)
+		col += runewidth.RuneWidth(ch)
+	}
+}
+func handle_key_events(ev termbox.Event) {
 
-// for the line numbers column
-var offset int
+	switch ev.Key {
+	case termbox.KeyCtrlQ, termbox.KeyEsc:
+		QUIT = true
+		return
+	case termbox.KeyArrowDown:
+		if currentRow < len(textBuffer)-1 {
+			currentRow++
+		}
 
-var limit int
-var ox, oy int
-var linesCharCount map[int]int
+	case termbox.KeyArrowUp:
+		if currentRow != 0 {
+			currentRow--
+		}
 
-var emptyChar rune
+	case termbox.KeyArrowLeft:
+		if currentCol != 0 {
+			currentCol--
+		} else if currentRow > 0 {
+			currentCol = len(textBuffer[currentRow-1])
+			currentRow--
+		}
 
-var jumpList types.JumpList
+	case termbox.KeyArrowRight:
+		if currentCol < len(textBuffer[currentRow]) {
+			currentCol++
+		} else if currentRow+1 < len(textBuffer) {
+			currentCol = 0
+			currentRow++
+		}
 
-func main() {
-	if os.Getenv("CURR_DEV_ENV") == "dev" {
-		version = "v0.1.0"
-		binary_name = "eddy"
+	}
+	scroll_text_buffer()
+	if currentCol > len(textBuffer[currentRow]) {
+		currentCol = len(textBuffer[currentRow])
 	}
 
-	setup()
-	defer quit()
-	defer logFile.Close()
+}
 
-	// Event loop
-	for {
-		// Update screen
-		s.Show()
+func scroll_text_buffer() {
+	if currentRow >= ROWS+offsetY {
+		offsetY = currentRow - ROWS + 1
+	}
+	if currentRow < offsetY {
+		offsetY = currentRow
+	}
+	if currentCol < offsetX {
+		offsetX = currentCol
+	}
+	if currentCol >= COLS+offsetX {
+		offsetX = currentCol - COLS + 1
+	}
+}
 
-		// Show cursor
-		s.ShowCursor(ox, oy)
-		s.SetCursorStyle(tcell.CursorStyleBlinkingBlock)
-		// showNumberLine()
+func display_text_buffer() {
+	var row, col int
+	var txtBufRow, txtBufCol int
+	linesCount := len(textBuffer)
 
-		printed := false
-		if !printed {
+	for row = 0; row < ROWS; row++ {
+		txtBufRow = row + offsetY // scroll by offsetY lines
 
-			logMsg("\n")
-			for i, p := range jumpList {
+		for col = 0; col < COLS; col++ {
+			txtBufCol = col + offsetX // scroll by offsetX columns
 
-				if p.Val == '\n' {
-					logMsg("found a newline in jumpList (printer)\n")
-					logMsg("\n")
+			// display the text buffer content
+			if txtBufRow < linesCount && txtBufCol < len(textBuffer[txtBufRow]) {
+				if textBuffer[txtBufRow][txtBufCol] != '\t' {
+					termbox.SetChar(col, row, textBuffer[txtBufRow][txtBufCol])
 				} else {
-					logMsg(string(p.Val))
+					termbox.SetCell(col, row, rune(' '), termbox.ColorDefault, termbox.ColorDefault)
 				}
-
-				if i > 40 {
-					logMsg("\n")
-				}
+			} else if txtBufRow >= linesCount { // print * if line is empty
+				termbox.SetCell(0, row, rune('*'), termbox.ColorBlue, termbox.ColorDefault)
 			}
 		}
 
-		updatelinesCharCount()
-		ev := s.PollEvent()
-
-		printed = true
-
-		switch ev := ev.(type) {
-
-		case *tcell.EventResize:
-			s.Sync()
-
-		case *tcell.EventKey:
-
-			if ev.Key() == tcell.KeyEscape || ev.Key() == tcell.KeyCtrlQ {
-				return
-
-			} else if ev.Key() == tcell.KeyEnter {
-				registerNewKey(ev)
-
-			} else if ev.Key() == tcell.KeyUp {
-				handleKeyUp()
-
-			} else if ev.Key() == tcell.KeyDown {
-				handleKeyDown()
-
-			} else if ev.Key() == tcell.KeyLeft {
-				handleKeyLeft()
-
-			} else if ev.Key() == tcell.KeyRight {
-				handleKeyRight()
-
-			} else if ev.Key() == tcell.KeyBackspace2 || ev.Key() == tcell.KeyBackspace {
-				handleBackSpace()
-			} else {
-				registerNewKey(ev)
-				// handlePrintableChars(ev)
-			}
-
-			s.Clear()
-			showNumberLine()
-			setContent()
-			s.ShowCursor(ox+1, oy)
-		}
+		// new line at the end of each row
+		termbox.SetChar(col, row, rune('\n'))
 	}
 }
-
-func setup() {
-	// Setup our variables and initial state
-	offset = 4
-	limit = 100
-	ox, oy = offset+1, 0
-
-	linesCharCount = make(map[int]int)
-
-	// for debugging
-	if os.Getenv("DEBUG") == "true" {
-		logFile, err = os.OpenFile("./log.out", os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
-		if err != nil {
-			panic("failed to open log file")
-		}
-	}
-
-	// Initialize screen
-	s, err = tcell.NewScreen()
+func read_file(filename string) {
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
-		panic(err.Error())
-	}
-
-	boxStyle = tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.ColorDarkGray)
-	defStyle = tcell.StyleDefault.Foreground(tcell.ColorNavajoWhite).Background(tcell.ColorDarkGray)
-
-	if err := s.Init(); err != nil {
-		log.Fatalf("%+v", err)
-	}
-	s.SetStyle(boxStyle)
-	s.Clear()
-
-}
-func quit() {
-
-	maybePanic := recover()
-
-	s.Fini() // free the resources then panic back
-	if maybePanic != nil {
-		panic(maybePanic)
-	}
-}
-func logMsg(msg string) {
-	if os.Getenv("DEBUG") == "true" {
-		logFile.WriteString(msg)
-	}
-}
-
-func showNumberLine() {
-
-	for k, _ := range linesCharCount {
-		runes := []rune(fmt.Sprintf("%d", k+1))
-		i := 0
-		for i = 0; i < len(runes); i++ {
-			s.SetContent(i, k, runes[i], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.ColorDarkBlue))
-		}
-		for j := i; j < offset; j++ {
-			s.SetContent(j, k, rune(' '), nil, tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.ColorDarkBlue))
-		}
-	}
-}
-
-func updatelinesCharCount() {
-	for k := range linesCharCount {
-		linesCharCount[k] = 0
-	}
-
-	for _, p := range jumpList {
-		linesCharCount[p.Y] += 1
-	}
-}
-
-func registerNewKey(ev *tcell.EventKey) {
-
-	l := len(jumpList)
-	targetIndex := ox - offset - 1
-
-	counter := 0
-	for _, v := range linesCharCount {
-		if counter < oy {
-			targetIndex += v
-		}
-	}
-
-	logMsg(fmt.Sprintf("target index %#v\n", targetIndex))
-
-	if targetIndex >= l {
-		ox++
-		jumpList = append(jumpList, types.JumpPoint{
-			X:   ox,
-			Y:   oy,
-			Val: ev.Rune(),
-		})
-
-		if ev.Key() == tcell.KeyEnter {
-			ox = offset + 1
-			oy++
-		}
-	}
-
-	if targetIndex < l {
-		ox++
-		jumpList = slices.Insert(jumpList, targetIndex+1, types.JumpPoint{
-			X:   ox,
-			Y:   oy,
-			Val: ev.Rune(),
-		})
-
-		if ev.Key() == tcell.KeyEnter {
-			jumpList[targetIndex].NewLine = true
-			ox = offset + 1
-			oy++
-		}
-
-	}
-}
-
-func handleBackSpace() {
-
-	l := len(jumpList)
-
-	if l == 0 {
+		fmt.Printf("Error on openning file %s : %v\n", filename, err.Error())
 		return
 	}
-	if l == 1 {
-		jumpList = types.JumpList{}
-		ox = offset + 1
-		oy = 0
-	}
-	if l >= 2 {
-		// pop the last elem
-		jumpList = slices.Delete(jumpList, l-1, l)
+	defer file.Close()
 
-		ox = jumpList[l-2].X
-		oy = jumpList[l-2].Y
+	source_file = filename
+	lineNumber := 0
+
+	scanner := bufio.NewScanner(file)
+	var line string
+	var l int
+
+	for scanner.Scan() {
+		textBuffer = append(textBuffer, []rune{})
+		line = scanner.Text()
+		l = len(line)
+
+		for i := 0; i < l; i++ {
+			textBuffer[lineNumber] = append(textBuffer[lineNumber], rune(line[i]))
+		}
+		lineNumber++
+	}
+	if lineNumber == 0 {
+		textBuffer = append(textBuffer, []rune{})
+	}
+}
+func display_status_bar() {
+
+	left_side_content := fmt.Sprintf(" File: %s\t line:%d,col:%d", source_file, currentRow, currentCol)
+	llen := len(left_side_content)
+
+	for i := 0; i < llen; i++ {
+		termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorBlack, termbox.ColorWhite)
+	}
+	right_side_content := "Eddy v0.1.0 "
+	rlen := len(right_side_content)
+
+	padding := COLS - llen - rlen
+
+	for i := 0; i < padding; i++ {
+		termbox.SetCell(i+llen, ROWS, rune(' '), termbox.ColorWhite, termbox.ColorWhite)
+	}
+
+	for i := 0; i < rlen; i++ {
+		termbox.SetCell(i+llen+padding, ROWS, rune(right_side_content[i]), termbox.ColorBlack, termbox.ColorWhite)
 	}
 }
 
-func handleKeyUp() {
-	if oy > 0 {
-		oy--
-		if ox-offset-1 > linesCharCount[oy] {
-			ox = linesCharCount[oy] + offset + 1
+func run_editor() {
+	err := termbox.Init()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer termbox.Close()
+
+	if len(os.Args) > 1 {
+		source_file = os.Args[1]
+		read_file(source_file)
+	} else {
+		source_file = "out.txt"
+		textBuffer = append(textBuffer, []rune{})
+	}
+	for !QUIT {
+
+		COLS, ROWS = termbox.Size() // re-evaluate each time to synch with size change
+		ROWS--                      // for the status bar
+
+		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+
+		display_status_bar()
+		display_text_buffer()
+		termbox.SetCursor(currentCol-offsetX, currentRow-offsetY)
+		termbox.Flush()
+
+		evt := termbox.PollEvent()
+		switch evt.Type {
+		case termbox.EventKey:
+			handle_key_events(evt)
+		case termbox.EventError:
+			return // call defered routines
 		}
 	}
 }
-func handleKeyDown() {
-	if linesCharCount[oy+1] > 0 {
-		oy++
-		if ox-offset-1 > linesCharCount[oy] {
-			ox = linesCharCount[oy] + offset + 1
-		}
-	}
-}
-
-func handleKeyLeft() {
-	if ox > offset+1 {
-		ox--
-	} else if oy > 0 && linesCharCount[oy-1] > 1 {
-		oy--
-		ox = linesCharCount[oy] + offset + 1
-	}
-}
-
-func handleKeyRight() {
-	if ox-offset-1 < linesCharCount[oy] {
-		ox++
-	} else if linesCharCount[oy+1] > 0 {
-		ox = offset + 1
-		oy++
-	}
-}
-
-func setContent() {
-	newLinesCount := 0
-
-	for _, p := range jumpList {
-		if p.Val == '\t' {
-			s.SetContent(p.X+1, p.Y+newLinesCount, ' ', nil, defStyle)
-			s.SetContent(p.X+2, p.Y+newLinesCount, ' ', nil, defStyle)
-			s.SetContent(p.X+3, p.Y+newLinesCount, ' ', nil, defStyle)
-			s.SetContent(p.X+4, p.Y+newLinesCount, ' ', nil, defStyle)
-			ox += 4
-		} else if p.NewLine {
-			newLinesCount++
-			// oy++
-		} else {
-			s.SetContent(p.X, p.Y+newLinesCount, p.Val, nil, defStyle)
-		}
-	}
+func main() {
+	run_editor()
 }
