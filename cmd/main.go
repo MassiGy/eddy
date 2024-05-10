@@ -142,6 +142,12 @@ func handle_key_events(ev termbox.Event) {
 				currentCol = 0
 				currentRow++
 			}
+
+		case termbox.KeyHome:
+			currentCol = 0
+		case termbox.KeyEnd:
+			currentCol = len(textBuffer[currentRow])
+
 		case termbox.KeyTab:
 			for i := 0; i < 4; i++ {
 				insert_character(rune(' '))
@@ -239,9 +245,6 @@ func read_file(filename string) {
 
 		for i := 0; i < l; i++ {
 			textBuffer[lineNumber] = append(textBuffer[lineNumber], rune(line[i]))
-			if i == l-1 && line[i] != '\n' {
-				textBuffer[lineNumber] = append(textBuffer[lineNumber], rune('\n'))
-			}
 		}
 		lineNumber++
 	}
@@ -272,6 +275,9 @@ func write_file(filename string) {
 
 		for col := 0; col < cols; col++ {
 			w.WriteRune(textBuffer[row][col])
+			if col == cols-1 && textBuffer[row][col] != '\n' {
+				w.WriteRune('\n')
+			}
 		}
 	}
 	w.Flush()
@@ -284,7 +290,13 @@ func display_status_bar() {
 		modified_mark = "*"
 	}
 
-	left_side_content := fmt.Sprintf(" File: %s%s\t line:%d,col:%d", source_file, modified_mark, currentRow, currentCol)
+	current_file := source_file
+	if len(source_file) > 8 {
+		current_file = source_file[:8] + "..."
+
+	}
+
+	left_side_content := fmt.Sprintf(" File: %s%s\t line:%d,col:%d", modified_mark, current_file, currentRow, currentCol)
 	llen := len(left_side_content)
 
 	for i := 0; i < llen; i++ {
