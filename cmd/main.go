@@ -10,15 +10,22 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
-var ROWS, COLS int
+var version string
+var binary_name string
+
 var QUIT bool = false
+var ROWS, COLS int
+var SAVE_TO_FILE_MAX_ERROR_COUNT int = 3
 var LINE_NUMBER_COL_WIDTH int = 5
+
 var currentCol, currentRow int
 var offsetX, offsetY int
 
 var textBuffer = [][]rune{}
+
+var modified bool = false
+
 var source_file string
-var SAVE_TO_FILE_MAX_ERROR_COUNT int = 3
 
 func print_message(col, row int, fg, bg termbox.Attribute, msg string) {
 	for _, ch := range msg {
@@ -139,24 +146,30 @@ func handle_key_events(ev termbox.Event) {
 			for i := 0; i < 4; i++ {
 				insert_character(rune(' '))
 			}
+			modified = true
 
 		case termbox.KeySpace:
 			insert_character(rune(' '))
+			modified = true
 
 		case termbox.KeyEnter:
 			insert_newline()
+			modified = true
 
 		case termbox.KeyBackspace, termbox.KeyBackspace2:
 			delete_character()
+			modified = true
 
 		case termbox.KeyCtrlS:
 			write_file(source_file)
+			modified = false
 
 		}
 
 	} else {
 		// printable characters
 		insert_character(ev.Ch)
+		modified = true
 	}
 	if len(textBuffer) > 0 && currentCol > len(textBuffer[currentRow]) {
 		currentCol = len(textBuffer[currentRow])
@@ -196,8 +209,8 @@ func display_text_buffer() {
 				} else {
 					termbox.SetCell(col, row, rune(' '), termbox.ColorDefault, termbox.ColorDefault)
 				}
-			} else if txtBufRow >= linesCount { // print * if line is empty
-				termbox.SetCell(0, row, rune('*'), termbox.ColorBlue, termbox.ColorDefault)
+			} else if txtBufRow >= linesCount { // for unreached lines print ~ as in vim
+				termbox.SetCell(0, row, rune('~'), termbox.ColorBlue, termbox.ColorDefault)
 			}
 		}
 
@@ -266,13 +279,18 @@ func write_file(filename string) {
 
 func display_status_bar() {
 
-	left_side_content := fmt.Sprintf(" File: %s\t line:%d,col:%d", source_file, currentRow, currentCol)
+	modified_mark := ""
+	if modified {
+		modified_mark = "*"
+	}
+
+	left_side_content := fmt.Sprintf(" File: %s%s\t line:%d,col:%d", source_file, modified_mark, currentRow, currentCol)
 	llen := len(left_side_content)
 
 	for i := 0; i < llen; i++ {
 		termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorBlack, termbox.ColorWhite)
 	}
-	right_side_content := "Eddy v0.1.0 "
+	right_side_content := binary_name + " " + version
 	rlen := len(right_side_content)
 
 	padding := COLS - llen - rlen
@@ -324,5 +342,9 @@ func run_editor() {
 	}
 }
 func main() {
+	if os.Getenv("ENV") == "dev" {
+		binary_name = "eddy"
+		version = "v0.1.0"
+	}
 	run_editor()
 }
