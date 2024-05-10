@@ -1,4 +1,3 @@
-
 VERSION:=$(shell cat ./VERSION)
 BINARY_NAME:=$(shell cat ./BINARY_NAME)
 AUTHOR:="Massiles Ghernaout"

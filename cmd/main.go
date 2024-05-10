@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
@@ -17,6 +18,7 @@ var offsetX, offsetY int
 
 var textBuffer = [][]rune{}
 var source_file string
+var SAVE_TO_FILE_MAX_ERROR_COUNT int = 3
 
 func print_message(col, row int, fg, bg termbox.Attribute, msg string) {
 	for _, ch := range msg {
@@ -24,44 +26,141 @@ func print_message(col, row int, fg, bg termbox.Attribute, msg string) {
 		col += runewidth.RuneWidth(ch)
 	}
 }
-func handle_key_events(ev termbox.Event) {
 
-	switch ev.Key {
-	case termbox.KeyCtrlQ, termbox.KeyEsc:
-		QUIT = true
+func insert_character(ch rune) {
+	if len(textBuffer) == 0 {
+		textBuffer = append(textBuffer, []rune{ch})
 		return
-	case termbox.KeyArrowDown:
-		if currentRow < len(textBuffer)-1 {
-			currentRow++
-		}
+	}
+	textBuffer[currentRow] = slices.Insert(textBuffer[currentRow], currentCol, ch)
+	currentCol++
+}
+func insert_newline() {
+	if len(textBuffer) == 0 {
+		textBuffer = append(textBuffer, []rune{})
+		return
+	}
 
-	case termbox.KeyArrowUp:
-		if currentRow != 0 {
-			currentRow--
-		}
+	beforeNewLineSegment := make([]rune, currentCol)
+	afterNewLineSegment := make([]rune, len(textBuffer[currentRow])-currentCol)
+	copy(beforeNewLineSegment, textBuffer[currentRow][:currentCol])
+	copy(afterNewLineSegment, textBuffer[currentRow][currentCol:])
 
-	case termbox.KeyArrowLeft:
-		if currentCol != 0 {
-			currentCol--
-		} else if currentRow > 0 {
+	beforeNewLineSegment = append(beforeNewLineSegment, '\n')
+	textBuffer[currentRow] = beforeNewLineSegment
+
+	if currentRow+1 < len(textBuffer) {
+		textBuffer = slices.Insert(textBuffer, currentRow+1, afterNewLineSegment)
+	} else {
+		textBuffer = append(textBuffer, afterNewLineSegment)
+	}
+
+	currentCol = 0 // these will be offseted by scroll_buffer()
+	currentRow++
+}
+func delete_character() {
+
+	if len(textBuffer) == 0 {
+		return
+	}
+
+	l := len(textBuffer[currentRow])
+
+	if l > 1 && currentCol > 0 {
+		// middle of non empty line
+
+		textBuffer[currentRow] = slices.Delete(textBuffer[currentRow], currentCol-1, currentCol)
+		currentCol--
+
+	} else if currentCol == 0 && l > 1 && currentRow > 0 {
+		// start of non empty line
+		afterCursorLineSegment := make([]rune, l)
+		copy(afterCursorLineSegment, textBuffer[currentRow])
+
+		textBuffer = slices.Delete(textBuffer, currentRow, currentRow+1)
+		currentRow--
+
+		l = len(textBuffer[currentRow])
+
+		textBuffer[currentRow] = append(textBuffer[currentRow], afterCursorLineSegment...)
+
+		currentCol = l
+
+	} else if l <= 1 {
+		// end of single character line
+
+		textBuffer = slices.Delete(textBuffer, currentRow, currentRow+1)
+
+		if currentRow > 0 {
 			currentCol = len(textBuffer[currentRow-1])
 			currentRow--
-		}
-
-	case termbox.KeyArrowRight:
-		if currentCol < len(textBuffer[currentRow]) {
-			currentCol++
-		} else if currentRow+1 < len(textBuffer) {
+		} else {
 			currentCol = 0
-			currentRow++
+			currentRow = 0
+		}
+	}
+}
+
+func handle_key_events(ev termbox.Event) {
+
+	if ev.Ch == 0 {
+		// non printable characters
+
+		switch ev.Key {
+		case termbox.KeyCtrlQ, termbox.KeyEsc:
+			QUIT = true
+			return
+		case termbox.KeyArrowDown:
+			if currentRow < len(textBuffer)-1 {
+				currentRow++
+			}
+
+		case termbox.KeyArrowUp:
+			if currentRow != 0 {
+				currentRow--
+			}
+
+		case termbox.KeyArrowLeft:
+			if currentCol != 0 {
+				currentCol--
+			} else if currentRow > 0 {
+				currentCol = len(textBuffer[currentRow-1])
+				currentRow--
+			}
+
+		case termbox.KeyArrowRight:
+			if currentCol < len(textBuffer[currentRow]) {
+				currentCol++
+			} else if currentRow+1 < len(textBuffer) {
+				currentCol = 0
+				currentRow++
+			}
+		case termbox.KeyTab:
+			for i := 0; i < 4; i++ {
+				insert_character(rune(' '))
+			}
+
+		case termbox.KeySpace:
+			insert_character(rune(' '))
+
+		case termbox.KeyEnter:
+			insert_newline()
+
+		case termbox.KeyBackspace, termbox.KeyBackspace2:
+			delete_character()
+
+		case termbox.KeyCtrlS:
+			write_file(source_file)
+
 		}
 
+	} else {
+		// printable characters
+		insert_character(ev.Ch)
 	}
-	scroll_text_buffer()
-	if currentCol > len(textBuffer[currentRow]) {
+	if len(textBuffer) > 0 && currentCol > len(textBuffer[currentRow]) {
 		currentCol = len(textBuffer[currentRow])
 	}
-
 }
 
 func scroll_text_buffer() {
@@ -107,10 +206,9 @@ func display_text_buffer() {
 	}
 }
 func read_file(filename string) {
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
+	file, err := os.OpenFile(filename, os.O_RDONLY, 0666)
 	if err != nil {
-		fmt.Printf("Error on openning file %s : %v\n", filename, err.Error())
-		return
+		textBuffer = append(textBuffer, []rune{})
 	}
 	defer file.Close()
 
@@ -128,6 +226,9 @@ func read_file(filename string) {
 
 		for i := 0; i < l; i++ {
 			textBuffer[lineNumber] = append(textBuffer[lineNumber], rune(line[i]))
+			if i == l-1 && line[i] != '\n' {
+				textBuffer[lineNumber] = append(textBuffer[lineNumber], rune('\n'))
+			}
 		}
 		lineNumber++
 	}
@@ -135,6 +236,34 @@ func read_file(filename string) {
 		textBuffer = append(textBuffer, []rune{})
 	}
 }
+
+func write_file(filename string) {
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
+	if err != nil {
+		fmt.Printf("Error on file opening, file:%s, error:%v", filename, err.Error())
+
+		if SAVE_TO_FILE_MAX_ERROR_COUNT > 0 {
+			SAVE_TO_FILE_MAX_ERROR_COUNT--
+			write_file("out.txt") // fallback
+		}
+		return
+	}
+	defer file.Close()
+
+	w := bufio.NewWriter(file)
+
+	rows := len(textBuffer)
+	for row := 0; row < rows; row++ {
+
+		cols := len(textBuffer[row])
+
+		for col := 0; col < cols; col++ {
+			w.WriteRune(textBuffer[row][col])
+		}
+	}
+	w.Flush()
+}
+
 func display_status_bar() {
 
 	left_side_content := fmt.Sprintf(" File: %s\t line:%d,col:%d", source_file, currentRow, currentCol)
@@ -179,6 +308,7 @@ func run_editor() {
 
 		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 
+		scroll_text_buffer()
 		display_status_bar()
 		display_text_buffer()
 		termbox.SetCursor(currentCol-offsetX, currentRow-offsetY)

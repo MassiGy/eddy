@@ -1,1 +1,2 @@
 - Truncate filename on status bar
+- Test if the text editor is working
