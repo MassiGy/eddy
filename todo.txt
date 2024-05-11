@@ -1,6 +1,4 @@
 - Add a line number column.
-- Add support for user errors, if any display them on the status
-bar.
 - Add git integration on the status bar- Maybe set fallback file to stdin if no filename is passed
 - Add undo/redo capabilities.
 - Add a copy/paste buffer.

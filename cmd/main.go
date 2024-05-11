@@ -24,8 +24,11 @@ var offsetX, offsetY int
 var textBuffer = [][]rune{}
 
 var modified bool = false
+var err_message string
+var info_message string
 
 var source_file string
+var UNKOWN_SOURCE_FILENAME string = "nofile"
 
 func print_message(col, row int, fg, bg termbox.Attribute, msg string) {
 	for _, ch := range msg {
@@ -227,6 +230,7 @@ func display_text_buffer() {
 func read_file(filename string) {
 	file, err := os.OpenFile(filename, os.O_RDONLY, 0666)
 	if err != nil {
+		err_message = "Could not read file."
 		textBuffer = append(textBuffer, []rune{})
 	}
 	defer file.Close()
@@ -256,7 +260,7 @@ func read_file(filename string) {
 func write_file(filename string) {
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
 	if err != nil {
-		fmt.Printf("Error on file opening, file:%s, error:%v", filename, err.Error())
+		err_message = "Could not open file."
 
 		if SAVE_TO_FILE_MAX_ERROR_COUNT > 0 {
 			SAVE_TO_FILE_MAX_ERROR_COUNT--
@@ -296,12 +300,35 @@ func display_status_bar() {
 
 	}
 
-	left_side_content := fmt.Sprintf(" File: %s%s\t line:%d,col:%d", modified_mark, current_file, currentRow, currentCol)
-	llen := len(left_side_content)
+	left_side_content := ""
+	llen := 0
+	llen = len(left_side_content)
 
-	for i := 0; i < llen; i++ {
-		termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorBlack, termbox.ColorWhite)
+	err_msg_len := len(err_message)
+	info_msg_len := len(info_message)
+
+	if err_msg_len == 0 && info_msg_len == 0 {
+		left_side_content = fmt.Sprintf(" File: %s%s\t line:%d,col:%d", modified_mark, current_file, currentRow, currentCol)
+		llen = len(left_side_content)
+		for i := 0; i < llen; i++ {
+			termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorBlack, termbox.ColorWhite)
+		}
+	} else if err_msg_len > 0 {
+		left_side_content = fmt.Sprintf(" Error: %s\t", err_message)
+		llen = len(left_side_content)
+		for i := 0; i < llen; i++ {
+			termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorWhite, termbox.ColorRed)
+		}
+		err_message = ""
+	} else if info_msg_len > 0 {
+		left_side_content = fmt.Sprintf(" Info: %s\t", info_message)
+		llen = len(left_side_content)
+		for i := 0; i < llen; i++ {
+			termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorWhite, termbox.ColorBlue)
+		}
+		info_message = ""
 	}
+
 	right_side_content := binary_name + " " + version
 	rlen := len(right_side_content)
 
@@ -328,7 +355,8 @@ func run_editor() {
 		source_file = os.Args[1]
 		read_file(source_file)
 	} else {
-		source_file = "out.txt"
+		source_file = UNKOWN_SOURCE_FILENAME
+		info_message = "Input file messing."
 		textBuffer = append(textBuffer, []rune{})
 	}
 	for !QUIT {
@@ -339,7 +367,9 @@ func run_editor() {
 		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 
 		scroll_text_buffer()
+
 		display_status_bar()
+
 		display_text_buffer()
 		termbox.SetCursor(currentCol-offsetX, currentRow-offsetY)
 		termbox.Flush()
