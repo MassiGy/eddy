@@ -6,7 +6,6 @@ import (
 	"os"
 	"slices"
 
-	"github.com/mattn/go-runewidth"
 	"github.com/nsf/termbox-go"
 )
 
@@ -37,13 +36,6 @@ var info_message string
 
 // read/write to file
 var source_file string
-
-func print_message(col, row int, fg, bg termbox.Attribute, msg string) {
-	for _, ch := range msg {
-		termbox.SetCell(col, row, ch, fg, bg)
-		col += runewidth.RuneWidth(ch)
-	}
-}
 
 func insert_character(ch rune) {
 	if len(textBuffer) == 0 {
@@ -118,6 +110,92 @@ func delete_character() {
 		}
 	}
 }
+func delete_word(direction int) {
+	if len(textBuffer) == 0 {
+		return
+	}
+
+	l := len(textBuffer[currentRow])
+
+	if l <= 1 {
+		delete_character()
+		return
+	}
+
+	if currentCol <= 1 && direction == -1 {
+		delete_character()
+		return
+
+	} else if currentCol >= l-1 && direction == 1 {
+		currentCol = l + 1
+		delete_character()
+		return
+	}
+
+	word_len := 0
+	for i := currentCol + direction; i >= 0 && i < l; i += direction {
+		if word_len > 0 && textBuffer[currentRow][i] == rune(' ') || textBuffer[currentRow][i] == rune('\n') {
+			break
+		}
+		word_len++
+	}
+	if word_len > 0 && direction == -1 {
+		textBuffer[currentRow] = slices.Delete(textBuffer[currentRow], currentCol-word_len, currentCol)
+		currentCol -= word_len
+		l -= word_len
+	} else if word_len > 0 && direction == 1 {
+		textBuffer[currentRow] = slices.Delete(textBuffer[currentRow], currentCol, currentCol+word_len+1)
+		l -= word_len
+	}
+
+	if l == 0 {
+		textBuffer = slices.Delete(textBuffer, currentRow, currentRow+1)
+		if currentRow > 0 {
+			currentCol = len(textBuffer[currentRow-1])
+			currentRow--
+		}
+	}
+}
+
+func jump_word(direction int) {
+	if len(textBuffer) == 0 {
+		return
+	}
+
+	l := len(textBuffer[currentRow])
+
+	if l <= 1 {
+		currentCol = 0
+		return
+	}
+
+	if currentCol <= 1 && direction == -1 {
+		if currentRow > 0 {
+			currentCol = len(textBuffer[currentRow-1])
+			currentRow--
+		}
+		return
+	} else if currentCol >= l-1 && direction == 1 {
+		if currentRow < len(textBuffer) {
+			currentCol = 0
+			currentRow++
+		}
+		return
+	}
+
+	word_len := 0
+	for i := currentCol + direction; i >= 0 && i < l; i += direction {
+		if word_len > 0 && textBuffer[currentRow][i] == rune(' ') || textBuffer[currentRow][i] == rune('\n') {
+			break
+		}
+		word_len++
+	}
+	if word_len > 0 && direction == -1 {
+		currentCol -= word_len
+	} else if word_len > 0 && direction == 1 {
+		currentCol += word_len
+	}
+}
 
 func handle_key_events(ev termbox.Event) {
 
@@ -180,6 +258,20 @@ func handle_key_events(ev termbox.Event) {
 		case termbox.KeyCtrlS:
 			write_file(source_file)
 			modified = false
+
+		case termbox.KeyCtrlD:
+			delete_word(-1)
+			modified = true
+
+		case termbox.KeyCtrlX:
+			delete_word(1)
+			modified = true
+
+		case termbox.KeyCtrlR:
+			jump_word(1)
+
+		case termbox.KeyCtrlL:
+			jump_word(-1)
 
 		case termbox.KeyCtrlN:
 			SHOW_LINE_NUMBERS = !SHOW_LINE_NUMBERS
