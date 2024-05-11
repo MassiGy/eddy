@@ -21,6 +21,7 @@ var SAVE_TO_FILE_MAX_ERROR_COUNT int = 3
 var UNKOWN_SOURCE_FILENAME string = "nofile"
 var LINE_NUMBER_COL_WIDTH int
 var SHOW_LINE_NUMBERS bool = true
+var LINES_COUNT int
 
 // in buffer cursor info
 var currentCol, currentRow int
@@ -202,24 +203,18 @@ func scroll_text_buffer() {
 	if currentRow < offsetY {
 		offsetY = currentRow
 	}
-	if currentCol < offsetX+LINE_NUMBER_COL_WIDTH {
-		offsetX = currentCol - LINE_NUMBER_COL_WIDTH
+	if currentCol < offsetX {
+		offsetX = currentCol
 	}
-	if currentCol >= COLS+offsetX-LINE_NUMBER_COL_WIDTH {
-		offsetX = currentCol - COLS + 1 + LINE_NUMBER_COL_WIDTH
+	if currentCol >= COLS+offsetX {
+		offsetX = currentCol - COLS + 1
 	}
 }
 
 func display_text_buffer() {
 	var row, col int
 	var txtBufRow, txtBufCol int
-	linesCount := len(textBuffer)
-
-	if SHOW_LINE_NUMBERS {
-		LINE_NUMBER_COL_WIDTH = 2 + len(fmt.Sprintf("%d", linesCount))
-	} else {
-		LINE_NUMBER_COL_WIDTH = 0
-	}
+	linesCount := LINES_COUNT
 
 	for row = 0; row < ROWS; row++ {
 		txtBufRow = row + offsetY // scroll by offsetY lines
@@ -232,7 +227,7 @@ func display_text_buffer() {
 			}
 		}
 
-		for col = LINE_NUMBER_COL_WIDTH; col < COLS; col++ {
+		for col = LINE_NUMBER_COL_WIDTH; col < COLS+LINE_NUMBER_COL_WIDTH; col++ {
 			txtBufCol = col - LINE_NUMBER_COL_WIDTH + offsetX // scroll by offsetX columns
 
 			// display the text buffer content
@@ -318,6 +313,11 @@ func display_status_bar() {
 		modified_mark = "*"
 	}
 
+	line_numbers_mark := ""
+	if SHOW_LINE_NUMBERS {
+		line_numbers_mark = "ln"
+	}
+
 	current_file := source_file
 	if len(source_file) > 8 {
 		current_file = source_file[:8] + "..."
@@ -332,7 +332,7 @@ func display_status_bar() {
 	info_msg_len := len(info_message)
 
 	if err_msg_len == 0 && info_msg_len == 0 {
-		left_side_content = fmt.Sprintf(" File: %s%s\t line:%d,col:%d", modified_mark, current_file, currentRow, currentCol)
+		left_side_content = fmt.Sprintf(" File: %s%s\t line:%d,col:%d\t%s", modified_mark, current_file, currentRow, currentCol, line_numbers_mark)
 		llen = len(left_side_content)
 		for i := 0; i < llen; i++ {
 			termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorBlack, termbox.ColorWhite)
@@ -357,6 +357,9 @@ func display_status_bar() {
 	rlen := len(right_side_content)
 
 	padding := COLS - llen - rlen
+	if SHOW_LINE_NUMBERS {
+		padding += LINE_NUMBER_COL_WIDTH
+	}
 
 	for i := 0; i < padding; i++ {
 		termbox.SetCell(i+llen, ROWS, rune(' '), termbox.ColorWhite, termbox.ColorWhite)
@@ -383,11 +386,20 @@ func run_editor() {
 		info_message = "Input file messing."
 		textBuffer = append(textBuffer, []rune{})
 	}
+	currentCol = LINE_NUMBER_COL_WIDTH
+	currentRow = 0
 
 	for !QUIT {
+		LINES_COUNT = len(textBuffer)
 
-		COLS, ROWS = termbox.Size() // re-evaluate each time to synch with size change
-		ROWS--                      // for the status bar
+		if SHOW_LINE_NUMBERS {
+			LINE_NUMBER_COL_WIDTH = 2 + len(fmt.Sprintf("%d", LINES_COUNT))
+		} else {
+			LINE_NUMBER_COL_WIDTH = 0
+		}
+		COLS, ROWS = termbox.Size()   // re-evaluate each time to synch with size change
+		ROWS--                        // for the status bar
+		COLS -= LINE_NUMBER_COL_WIDTH // for the linenumber column
 
 		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 
