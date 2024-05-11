@@ -276,6 +276,12 @@ func handle_key_events(ev termbox.Event) {
 		case termbox.KeyCtrlN:
 			SHOW_LINE_NUMBERS = !SHOW_LINE_NUMBERS
 
+		case termbox.KeyPgup:
+			currentRow = 0
+
+		case termbox.KeyPgdn:
+			currentRow = len(textBuffer) - 1
+
 		}
 
 	} else {
