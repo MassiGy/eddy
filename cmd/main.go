@@ -10,25 +10,32 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
+// binary info
 var version string
 var binary_name string
 
+// constants
 var QUIT bool = false
 var ROWS, COLS int
 var SAVE_TO_FILE_MAX_ERROR_COUNT int = 3
-var LINE_NUMBER_COL_WIDTH int = 5
+var UNKOWN_SOURCE_FILENAME string = "nofile"
+var LINE_NUMBER_COL_WIDTH int
+var SHOW_LINE_NUMBERS bool = true
 
+// in buffer cursor info
 var currentCol, currentRow int
 var offsetX, offsetY int
 
+// buffer
 var textBuffer = [][]rune{}
 
+// status bar flags
 var modified bool = false
 var err_message string
 var info_message string
 
+// read/write to file
 var source_file string
-var UNKOWN_SOURCE_FILENAME string = "nofile"
 
 func print_message(col, row int, fg, bg termbox.Attribute, msg string) {
 	for _, ch := range msg {
@@ -173,6 +180,9 @@ func handle_key_events(ev termbox.Event) {
 			write_file(source_file)
 			modified = false
 
+		case termbox.KeyCtrlN:
+			SHOW_LINE_NUMBERS = !SHOW_LINE_NUMBERS
+
 		}
 
 	} else {
@@ -192,11 +202,11 @@ func scroll_text_buffer() {
 	if currentRow < offsetY {
 		offsetY = currentRow
 	}
-	if currentCol < offsetX {
-		offsetX = currentCol
+	if currentCol < offsetX+LINE_NUMBER_COL_WIDTH {
+		offsetX = currentCol - LINE_NUMBER_COL_WIDTH
 	}
-	if currentCol >= COLS+offsetX {
-		offsetX = currentCol - COLS + 1
+	if currentCol >= COLS+offsetX-LINE_NUMBER_COL_WIDTH {
+		offsetX = currentCol - COLS + 1 + LINE_NUMBER_COL_WIDTH
 	}
 }
 
@@ -205,11 +215,25 @@ func display_text_buffer() {
 	var txtBufRow, txtBufCol int
 	linesCount := len(textBuffer)
 
+	if SHOW_LINE_NUMBERS {
+		LINE_NUMBER_COL_WIDTH = 2 + len(fmt.Sprintf("%d", linesCount))
+	} else {
+		LINE_NUMBER_COL_WIDTH = 0
+	}
+
 	for row = 0; row < ROWS; row++ {
 		txtBufRow = row + offsetY // scroll by offsetY lines
 
-		for col = 0; col < COLS; col++ {
-			txtBufCol = col + offsetX // scroll by offsetX columns
+		if SHOW_LINE_NUMBERS {
+			line_number_as_str := fmt.Sprintf("%d", row+1)
+
+			for i, ch := range line_number_as_str {
+				termbox.SetCell(i, row, ch, termbox.ColorYellow, termbox.ColorDefault)
+			}
+		}
+
+		for col = LINE_NUMBER_COL_WIDTH; col < COLS; col++ {
+			txtBufCol = col - LINE_NUMBER_COL_WIDTH + offsetX // scroll by offsetX columns
 
 			// display the text buffer content
 			if txtBufRow < linesCount && txtBufCol < len(textBuffer[txtBufRow]) {
@@ -219,7 +243,7 @@ func display_text_buffer() {
 					termbox.SetCell(col, row, rune(' '), termbox.ColorDefault, termbox.ColorDefault)
 				}
 			} else if txtBufRow >= linesCount { // for unreached lines print ~ as in vim
-				termbox.SetCell(0, row, rune('~'), termbox.ColorBlue, termbox.ColorDefault)
+				termbox.SetCell(LINE_NUMBER_COL_WIDTH, row, rune('~'), termbox.ColorBlue, termbox.ColorDefault)
 			}
 		}
 
@@ -359,6 +383,7 @@ func run_editor() {
 		info_message = "Input file messing."
 		textBuffer = append(textBuffer, []rune{})
 	}
+
 	for !QUIT {
 
 		COLS, ROWS = termbox.Size() // re-evaluate each time to synch with size change
@@ -371,7 +396,9 @@ func run_editor() {
 		display_status_bar()
 
 		display_text_buffer()
-		termbox.SetCursor(currentCol-offsetX, currentRow-offsetY)
+
+		termbox.SetCursor(currentCol+LINE_NUMBER_COL_WIDTH-offsetX, currentRow-offsetY)
+
 		termbox.Flush()
 
 		evt := termbox.PollEvent()
