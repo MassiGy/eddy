@@ -334,7 +334,7 @@ func display_text_buffer() {
 		txtBufRow = row + offsetY // scroll by offsetY lines
 
 		if SHOW_LINE_NUMBERS {
-			line_number_as_str := fmt.Sprintf("%d", row+1)
+			line_number_as_str := fmt.Sprintf("%d", txtBufRow+1)
 
 			for i, ch := range line_number_as_str {
 				termbox.SetCell(i, row, ch, termbox.ColorYellow, termbox.ColorDefault)
