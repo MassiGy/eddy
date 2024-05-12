@@ -1,3 +1,7 @@
+- Maybe consider reading the \n characters from the input file, not just
+displaying them and writing them on save. Otherwise, you need to make sure
+that you are always regarding len(line) as actual_len-1.
+- Make delete word and jump word more intuitive ( it works but kinda weird )
 - Add vim like motions and modes ( basic motions )
 - Add a prompt like feature where we can get user input
 - Add git integration on the status bar

@@ -46,7 +46,8 @@ func insert_character(ch rune) {
 	currentCol++
 }
 func insert_newline() {
-	if len(textBuffer) == 0 {
+	l := len(textBuffer)
+	if l == 0 {
 		textBuffer = append(textBuffer, []rune{})
 		return
 	}
@@ -59,7 +60,7 @@ func insert_newline() {
 	beforeNewLineSegment = append(beforeNewLineSegment, '\n')
 	textBuffer[currentRow] = beforeNewLineSegment
 
-	if currentRow+1 < len(textBuffer) {
+	if currentRow+1 < l {
 		textBuffer = slices.Insert(textBuffer, currentRow+1, afterNewLineSegment)
 	} else {
 		textBuffer = append(textBuffer, afterNewLineSegment)
@@ -77,9 +78,15 @@ func delete_character() {
 	l := len(textBuffer[currentRow])
 
 	if l > 1 && currentCol > 0 {
-		// middle of non empty line
 
-		textBuffer[currentRow] = slices.Delete(textBuffer[currentRow], currentCol-1, currentCol)
+		if currentCol >= l {
+			// end of non empty line
+			textBuffer[currentRow] = slices.Delete(textBuffer[currentRow], l-1, l)
+		} else {
+			// middle of non empty line
+			textBuffer[currentRow] = slices.Delete(textBuffer[currentRow], currentCol-1, currentCol)
+		}
+
 		currentCol--
 
 	} else if currentCol == 0 && l > 1 && currentRow > 0 {
@@ -127,14 +134,21 @@ func delete_word(direction int) {
 		return
 
 	} else if currentCol >= l-1 && direction == 1 {
-		currentCol = l + 1
+		if currentRow+1 < len(textBuffer) {
+			currentCol = 0
+			currentRow++
+			delete_character()
+			return
+		}
+	}
+
+	if currentCol > 0 && direction == -1 {
 		delete_character()
-		return
 	}
 
 	word_len := 0
 	for i := currentCol + direction; i >= 0 && i < l; i += direction {
-		if word_len > 0 && textBuffer[currentRow][i] == rune(' ') || textBuffer[currentRow][i] == rune('\n') {
+		if word_len > 0 && textBuffer[currentRow][i] == rune(' ') || textBuffer[currentRow][i] == rune('\n') { // if fstCh==' '|'\n', pass
 			break
 		}
 		word_len++
@@ -212,12 +226,12 @@ func handle_key_events(ev termbox.Event) {
 			}
 
 		case termbox.KeyArrowUp:
-			if currentRow != 0 {
+			if currentRow > 0 {
 				currentRow--
 			}
 
 		case termbox.KeyArrowLeft:
-			if currentCol != 0 {
+			if currentCol > 0 {
 				currentCol--
 			} else if currentRow > 0 {
 				currentCol = len(textBuffer[currentRow-1])
@@ -225,7 +239,9 @@ func handle_key_events(ev termbox.Event) {
 			}
 
 		case termbox.KeyArrowRight:
-			if currentCol < len(textBuffer[currentRow]) {
+			if len(textBuffer) == 0 {
+				break
+			} else if currentCol < len(textBuffer[currentRow]) {
 				currentCol++
 			} else if currentRow+1 < len(textBuffer) {
 				currentCol = 0
@@ -312,7 +328,7 @@ func scroll_text_buffer() {
 func display_text_buffer() {
 	var row, col int
 	var txtBufRow, txtBufCol int
-	linesCount := LINES_COUNT
+	linesCount := len(textBuffer)
 
 	for row = 0; row < ROWS; row++ {
 		txtBufRow = row + offsetY // scroll by offsetY lines
@@ -343,65 +359,6 @@ func display_text_buffer() {
 		// new line at the end of each row
 		termbox.SetChar(col, row, rune('\n'))
 	}
-}
-func read_file(filename string) {
-	file, err := os.OpenFile(filename, os.O_RDONLY, 0666)
-	if err != nil {
-		err_message = "Could not read file."
-		textBuffer = append(textBuffer, []rune{})
-	}
-	defer file.Close()
-
-	source_file = filename
-	lineNumber := 0
-
-	scanner := bufio.NewScanner(file)
-	var line string
-	var l int
-
-	for scanner.Scan() {
-		textBuffer = append(textBuffer, []rune{})
-		line = scanner.Text()
-		l = len(line)
-
-		for i := 0; i < l; i++ {
-			textBuffer[lineNumber] = append(textBuffer[lineNumber], rune(line[i]))
-		}
-		lineNumber++
-	}
-	if lineNumber == 0 {
-		textBuffer = append(textBuffer, []rune{})
-	}
-}
-
-func write_file(filename string) {
-	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
-	if err != nil {
-		err_message = "Could not open file."
-
-		if SAVE_TO_FILE_MAX_ERROR_COUNT > 0 {
-			SAVE_TO_FILE_MAX_ERROR_COUNT--
-			write_file("out.txt") // fallback
-		}
-		return
-	}
-	defer file.Close()
-
-	w := bufio.NewWriter(file)
-
-	rows := len(textBuffer)
-	for row := 0; row < rows; row++ {
-
-		cols := len(textBuffer[row])
-
-		for col := 0; col < cols; col++ {
-			w.WriteRune(textBuffer[row][col])
-			if col == cols-1 && textBuffer[row][col] != '\n' {
-				w.WriteRune('\n')
-			}
-		}
-	}
-	w.Flush()
 }
 
 func display_status_bar() {
@@ -468,6 +425,66 @@ func display_status_bar() {
 	}
 }
 
+func read_file(filename string) {
+	file, err := os.OpenFile(filename, os.O_RDONLY, 0666)
+	if err != nil {
+		err_message = "Could not read file."
+		textBuffer = append(textBuffer, []rune{})
+	}
+	defer file.Close()
+
+	source_file = filename
+	lineNumber := 0
+
+	scanner := bufio.NewScanner(file)
+	var line string
+	var l int
+
+	for scanner.Scan() {
+		textBuffer = append(textBuffer, []rune{})
+		line = scanner.Text()
+		l = len(line)
+
+		for i := 0; i < l; i++ {
+			textBuffer[lineNumber] = append(textBuffer[lineNumber], rune(line[i]))
+		}
+		lineNumber++
+	}
+	if lineNumber == 0 {
+		textBuffer = append(textBuffer, []rune{})
+	}
+}
+
+func write_file(filename string) {
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
+	if err != nil {
+		err_message = "Could not open file."
+
+		if SAVE_TO_FILE_MAX_ERROR_COUNT > 0 {
+			SAVE_TO_FILE_MAX_ERROR_COUNT--
+			write_file("out.txt") // fallback
+		}
+		return
+	}
+	defer file.Close()
+
+	w := bufio.NewWriter(file)
+
+	rows := len(textBuffer)
+	for row := 0; row < rows; row++ {
+
+		cols := len(textBuffer[row])
+
+		for col := 0; col < cols; col++ {
+			w.WriteRune(textBuffer[row][col])
+			if col == cols-1 && textBuffer[row][col] != '\n' {
+				w.WriteRune('\n')
+			}
+		}
+	}
+	w.Flush()
+}
+
 func run_editor() {
 	err := termbox.Init()
 	if err != nil {
@@ -488,10 +505,8 @@ func run_editor() {
 	currentRow = 0
 
 	for !QUIT {
-		LINES_COUNT = len(textBuffer)
-
 		if SHOW_LINE_NUMBERS {
-			LINE_NUMBER_COL_WIDTH = 2 + len(fmt.Sprintf("%d", LINES_COUNT))
+			LINE_NUMBER_COL_WIDTH = 2 + len(fmt.Sprintf("%d", len(textBuffer)))
 		} else {
 			LINE_NUMBER_COL_WIDTH = 0
 		}
@@ -520,6 +535,7 @@ func run_editor() {
 		}
 	}
 }
+
 func main() {
 	if os.Getenv("ENV") == "dev" {
 		binary_name = "eddy"
