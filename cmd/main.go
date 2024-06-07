@@ -13,8 +13,19 @@ import (
 var version string
 var binary_name string
 
+type mode int
+
+const (
+	NORMAL mode = iota
+	INSERT
+	VISUAL
+	PROMPT
+)
+
 // constants
 var QUIT bool = false
+var WRAP bool = false
+var WRAP_AFTER int = 50
 var ROWS, COLS int
 var SAVE_TO_FILE_MAX_ERROR_COUNT int = 3
 var UNKOWN_SOURCE_FILENAME string = "nofile"
@@ -33,6 +44,8 @@ var textBuffer = [][]rune{}
 var modified bool = false
 var err_message string
 var info_message string
+var whichkey_message string
+var current_mode mode
 
 // read/write to file
 var source_file string
@@ -215,11 +228,17 @@ func handle_key_events(ev termbox.Event) {
 
 	if ev.Ch == 0 {
 		// non printable characters
-
 		switch ev.Key {
-		case termbox.KeyCtrlQ, termbox.KeyEsc:
+
+		/* MANAGING MODES */
+		case termbox.KeyCtrlQ:
 			QUIT = true
 			return
+
+		case termbox.KeyEsc:
+			current_mode = NORMAL
+
+		/*  NAVIGATION  */
 		case termbox.KeyArrowDown:
 			if currentRow < len(textBuffer)-1 {
 				currentRow++
@@ -250,47 +269,9 @@ func handle_key_events(ev termbox.Event) {
 
 		case termbox.KeyHome:
 			currentCol = 0
+
 		case termbox.KeyEnd:
 			currentCol = len(textBuffer[currentRow])
-
-		case termbox.KeyTab:
-			for i := 0; i < 4; i++ {
-				insert_character(rune(' '))
-			}
-			modified = true
-
-		case termbox.KeySpace:
-			insert_character(rune(' '))
-			modified = true
-
-		case termbox.KeyEnter:
-			insert_newline()
-			modified = true
-
-		case termbox.KeyBackspace, termbox.KeyBackspace2:
-			delete_character()
-			modified = true
-
-		case termbox.KeyCtrlS:
-			write_file(source_file)
-			modified = false
-
-		case termbox.KeyCtrlD:
-			delete_word(-1)
-			modified = true
-
-		case termbox.KeyCtrlX:
-			delete_word(1)
-			modified = true
-
-		case termbox.KeyCtrlR:
-			jump_word(1)
-
-		case termbox.KeyCtrlL:
-			jump_word(-1)
-
-		case termbox.KeyCtrlN:
-			SHOW_LINE_NUMBERS = !SHOW_LINE_NUMBERS
 
 		case termbox.KeyPgup:
 			currentRow = 0
@@ -298,12 +279,142 @@ func handle_key_events(ev termbox.Event) {
 		case termbox.KeyPgdn:
 			currentRow = len(textBuffer) - 1
 
+		/* DELIMETERS */
+		case termbox.KeyTab:
+			if current_mode == INSERT {
+				for i := 0; i < 4; i++ {
+					insert_character(rune(' '))
+				}
+				modified = true
+			}
+
+		case termbox.KeySpace:
+			if current_mode == INSERT {
+				insert_character(rune(' '))
+				modified = true
+			}
+
+		case termbox.KeyEnter:
+			if current_mode == INSERT {
+				insert_newline()
+				modified = true
+			}
+
+		case termbox.KeyBackspace, termbox.KeyBackspace2:
+			if current_mode == INSERT {
+				delete_character()
+				modified = true
+			}
+
+		/* I/O on the file */
+		case termbox.KeyCtrlS:
+			write_file(source_file)
+			modified = false
+
+		case termbox.KeyCtrlR:
+			read_file(source_file)
+			modified = false
+			current_mode = NORMAL
+
+		/* EDITOR EXTRA CONTROL */
+		case termbox.KeyCtrlN:
+			SHOW_LINE_NUMBERS = !SHOW_LINE_NUMBERS
+
+		case termbox.KeyCtrlW:
+			WRAP = !WRAP
 		}
 
 	} else {
 		// printable characters
-		insert_character(ev.Ch)
-		modified = true
+		if current_mode == INSERT {
+			insert_character(ev.Ch)
+			modified = true
+
+		} else if current_mode == NORMAL {
+
+			switch ev.Ch {
+
+			case 'q':
+				QUIT = true
+				return
+
+			case 'e', 'i':
+				current_mode = INSERT
+
+			case 'v':
+				current_mode = VISUAL
+
+			case 'p', '?', ':':
+				current_mode = PROMPT
+
+			case 'r': // reload
+				read_file(source_file)
+				current_mode = NORMAL
+				modified = false
+
+			case 'w':
+				write_file(source_file)
+				modified = false
+
+			case 'k':
+				if currentRow > 0 {
+					currentRow--
+				}
+
+			case 'j':
+				if currentRow < len(textBuffer)-1 {
+					currentRow++
+				}
+
+			case 'h':
+				if currentCol > 0 {
+					currentCol--
+				} else if currentRow > 0 {
+					currentCol = len(textBuffer[currentRow-1])
+					currentRow--
+				}
+
+			case 'l':
+				if len(textBuffer) == 0 {
+					break
+				} else if currentCol < len(textBuffer[currentRow]) {
+					currentCol++
+				} else if currentRow+1 < len(textBuffer) {
+					currentCol = 0
+					currentRow++
+				}
+
+			case 'f':
+				jump_word(1)
+
+			case 'b':
+				jump_word(-1)
+
+			case 'D':
+				delete_word(1)
+				modified = true
+
+			case 'd':
+				delete_word(-1)
+				modified = true
+
+			case 'x':
+				delete_character()
+				current_mode = INSERT
+				modified = true
+
+			case 'C':
+				delete_word(1)
+				current_mode = INSERT
+				modified = true
+
+			case 'c':
+				delete_word(-1)
+				current_mode = INSERT
+				modified = true
+			}
+
+		}
 	}
 	if len(textBuffer) > 0 && currentCol > len(textBuffer[currentRow]) {
 		currentCol = len(textBuffer[currentRow])
@@ -370,16 +481,32 @@ func display_status_bar() {
 
 	line_numbers_mark := ""
 	if SHOW_LINE_NUMBERS {
-		line_numbers_mark = "ln"
+		line_numbers_mark = "[ln]"
+	}
+
+	wrap_mark := ""
+	if WRAP {
+		wrap_mark = fmt.Sprintf("[WRP=%d]", WRAP_AFTER)
 	}
 
 	current_file := source_file
 	if len(source_file) > 8 {
 		current_file = source_file[:8] + "..."
-
 	}
 
 	left_side_content := ""
+	switch current_mode {
+	case INSERT:
+		left_side_content += "INSERT"
+	case NORMAL:
+		left_side_content += "NORMAL"
+	case VISUAL:
+		left_side_content += "VISUAL"
+	case PROMPT:
+		left_side_content += "PROMPT"
+	}
+	left_side_content += ""
+
 	llen := 0
 	llen = len(left_side_content)
 
@@ -387,20 +514,20 @@ func display_status_bar() {
 	info_msg_len := len(info_message)
 
 	if err_msg_len == 0 && info_msg_len == 0 {
-		left_side_content = fmt.Sprintf(" File: %s%s\t line:%d,col:%d\t%s", modified_mark, current_file, currentRow, currentCol, line_numbers_mark)
+		left_side_content += fmt.Sprintf(" File: %s%s\t line:%d,col:%d | %s %s", modified_mark, current_file, currentRow, currentCol, line_numbers_mark, wrap_mark)
 		llen = len(left_side_content)
 		for i := 0; i < llen; i++ {
 			termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorBlack, termbox.ColorWhite)
 		}
 	} else if err_msg_len > 0 {
-		left_side_content = fmt.Sprintf(" Error: %s\t", err_message)
+		left_side_content += fmt.Sprintf(" Error: %s\t", err_message)
 		llen = len(left_side_content)
 		for i := 0; i < llen; i++ {
 			termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorWhite, termbox.ColorRed)
 		}
 		err_message = ""
 	} else if info_msg_len > 0 {
-		left_side_content = fmt.Sprintf(" Info: %s\t", info_message)
+		left_side_content += fmt.Sprintf(" Info: %s\t", info_message)
 		llen = len(left_side_content)
 		for i := 0; i < llen; i++ {
 			termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorWhite, termbox.ColorBlue)
@@ -503,6 +630,7 @@ func run_editor() {
 	}
 	currentCol = LINE_NUMBER_COL_WIDTH
 	currentRow = 0
+	current_mode = NORMAL
 
 	for !QUIT {
 		if SHOW_LINE_NUMBERS {
