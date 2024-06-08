@@ -9,7 +9,10 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${fileDirname}"
+            "console": "integratedTerminal",
+            "showGlobalVariables": true,
+            "args": ["../test.txt"],
+            "program": "${workspaceFolder}/cmd/main.go"
         }
     ]
 }

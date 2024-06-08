@@ -2,6 +2,7 @@
 displaying them and writing them on save. Otherwise, you need to make sure
 that you are always regarding len(line) as actual_len-1.
 - Make delete word and jump word more intuitive ( it works but kinda weird )
+- Uniformize how \n are handled (do we read them, do we write them to buffer?)
 - Add vim like motions and modes ( basic motions )
 - Add wrapping mechanism
 - Add a prompt like feature where we can get user input
