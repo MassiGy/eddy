@@ -25,7 +25,7 @@ const (
 // constants
 var QUIT bool = false
 var WRAP bool = false
-var WRAP_AFTER int = 50
+var WRAP_AFTER int = 60
 var ROWS, COLS int
 var SAVE_TO_FILE_MAX_ERROR_COUNT int = 3
 var UNKOWN_SOURCE_FILENAME string = "nofile"
@@ -39,6 +39,8 @@ var offsetX, offsetY int
 
 // buffer
 var textBuffer = [][]rune{}
+var wrappedTextBuffer = [][]rune{}
+var nonWrappedTextBuffer = [][]rune{}
 
 // status bar flags
 var modified bool = false
@@ -365,9 +367,15 @@ func handle_key_events(ev termbox.Event) {
 			keylog_message = "Ctrl+n"
 			SHOW_LINE_NUMBERS = !SHOW_LINE_NUMBERS
 
-		case termbox.KeyCtrlW:
+		case termbox.KeyCtrlY:
 			keylog_message = "Ctrl+w"
 			WRAP = !WRAP
+			wrap()
+			if WRAP {
+				textBuffer = wrappedTextBuffer
+			} else {
+				textBuffer = nonWrappedTextBuffer
+			}
 		}
 
 	} else {
@@ -479,7 +487,71 @@ func scroll_text_buffer() {
 		offsetX = currentCol - COLS + 1
 	}
 }
+func is_delimiter(ch rune) bool {
+	return ch == ' ' ||
+		ch == '\t' ||
+		ch == ',' ||
+		ch == ';' ||
+		ch == ':' ||
+		ch == '!' ||
+		ch == '?' ||
+		ch == '"' ||
+		ch == '\'' ||
+		ch == '.' ||
+		ch == '/'
+}
+func wrap() {
 
+	// update the nonWrappedTextBuffer
+	nonWrappedTextBuffer = [][]rune{}
+	l := len(nonWrappedTextBuffer)
+	for _, row := range textBuffer {
+		rowCopy := make([]rune, len(row))
+		copy(rowCopy, row)
+		nonWrappedTextBuffer = append(nonWrappedTextBuffer, rowCopy)
+		l++
+	}
+
+	if nonWrappedTextBuffer == nil || l == 0 {
+		return
+	}
+
+	wrappedTextBuffer = [][]rune{}
+	for _, row := range nonWrappedTextBuffer {
+		rowLen := len(row)
+
+		if rowLen >= WRAP_AFTER {
+
+			remainder := make([]rune, rowLen)
+			copy(remainder, row)
+			lremainder := len(remainder)
+			for lremainder > WRAP_AFTER {
+
+				// find the prev delimiter
+				offset := 0
+				for i := 0; i < WRAP_AFTER; i++ {
+					if is_delimiter(remainder[WRAP_AFTER-i]) {
+						offset = -(i - 1) // -1 to let the delimiter on prevline
+						break
+					}
+				}
+				chuck := make([]rune, WRAP_AFTER+offset)
+				copy(chuck, remainder[:(WRAP_AFTER+offset)])
+				wrappedTextBuffer = append(wrappedTextBuffer, chuck)
+
+				remainder = slices.Delete(remainder, 0, WRAP_AFTER+offset)
+
+				lremainder = len(remainder) // update the length
+			}
+			if len(remainder) > 0 {
+				wrappedTextBuffer = append(wrappedTextBuffer, remainder)
+			}
+
+		} else {
+			wrappedTextBuffer = append(wrappedTextBuffer, row)
+		}
+	}
+}
 func display_text_buffer() {
 	var row, col int
 	var txtBufRow, txtBufCol int

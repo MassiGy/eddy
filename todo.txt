@@ -1,6 +1,7 @@
 # Basic
 - Add wrapping mechanism
 - Add a prompt like feature where we can get user input
+- Add a homescreen to the editor showing all the shortcuts
 - Maybe set fallback file to stdin if no filename is passed
 
 #  Advanced
