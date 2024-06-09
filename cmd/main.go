@@ -50,6 +50,19 @@ var current_mode mode
 // read/write to file
 var source_file string
 
+func is_delimiter(ch rune) bool {
+	return ch == ' ' ||
+		ch == '\t' ||
+		ch == ',' ||
+		ch == ';' ||
+		ch == ':' ||
+		ch == '!' ||
+		ch == '?' ||
+		ch == '"' ||
+		ch == '\'' ||
+		ch == '.' ||
+		ch == '/'
+}
 func insert_character(ch rune) {
 	if len(textBuffer) == 0 {
 		textBuffer = append(textBuffer, []rune{ch})
@@ -178,7 +191,7 @@ func delete_word(direction int) {
 
 	word_len := 1 // count the current char
 	for i := currentCol + direction; i >= 0 && i < l; i += direction {
-		if word_len > 0 && (textBuffer[currentRow][i] == rune(' ') || textBuffer[currentRow][i] == rune('\n')) { // if fstCh==' '|'\n', pass
+		if word_len > 0 && is_delimiter(textBuffer[currentRow][i]) {
 			word_len++ // count the space or the \n
 			break
 		}
@@ -230,7 +243,7 @@ func jump_word(direction int) {
 		}
 		return
 	} else if currentCol >= l-1 && direction == 1 {
-		if currentRow < len(textBuffer) {
+		if currentRow < len(textBuffer)-1 {
 			currentCol = 0
 			currentRow++
 		}
@@ -239,7 +252,7 @@ func jump_word(direction int) {
 
 	word_len := 0
 	for i := currentCol + direction; i >= 0 && i < l; i += direction {
-		if word_len > 0 && (textBuffer[currentRow][i] == rune(' ') || textBuffer[currentRow][i] == rune('\n')) {
+		if word_len > 0 && is_delimiter(textBuffer[currentRow][i]) {
 			break
 		}
 		word_len++
@@ -476,19 +489,7 @@ func scroll_text_buffer() {
 		offsetX = currentCol - COLS + 1
 	}
 }
-func is_delimiter(ch rune) bool {
-	return ch == ' ' ||
-		ch == '\t' ||
-		ch == ',' ||
-		ch == ';' ||
-		ch == ':' ||
-		ch == '!' ||
-		ch == '?' ||
-		ch == '"' ||
-		ch == '\'' ||
-		ch == '.' ||
-		ch == '/'
-}
+
 func wrap() {
 
 	wrappedTextBuffer := [][]rune{}

@@ -1,8 +1,8 @@
 # Basic
-- Fix the f motion on the edges
-- Add a prompt like feature where we can get user input
-- Add a homescreen to the editor showing all the shortcuts
-- Maybe set fallback file to stdin if no filename is passed
+- Add mouse support
+- Add a prompt like feature where we can get user input.
+- Add a homescreen to the editor showing all the shortcuts.
+- Maybe set fallback file to stdin if no filename is passed.
 
 #  Advanced
 - Add undo/redo capabilities.
