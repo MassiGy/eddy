@@ -70,7 +70,6 @@ func insert_newline() {
 	copy(beforeNewLineSegment, textBuffer[currentRow][:currentCol])
 	copy(afterNewLineSegment, textBuffer[currentRow][currentCol:])
 
-	beforeNewLineSegment = append(beforeNewLineSegment, '\n')
 	textBuffer[currentRow] = beforeNewLineSegment
 
 	if currentRow+1 < l {
@@ -204,7 +203,7 @@ func jump_word(direction int) {
 
 	if currentCol <= 1 && direction == -1 {
 		if currentRow > 0 {
-			currentCol = len(textBuffer[currentRow-1])
+			currentCol = len(textBuffer[currentRow-1]) - 1
 			currentRow--
 		}
 		return
@@ -259,14 +258,14 @@ func handle_key_events(ev termbox.Event) {
 			if currentCol > 0 {
 				currentCol--
 			} else if currentRow > 0 {
-				currentCol = len(textBuffer[currentRow-1])
+				currentCol = len(textBuffer[currentRow-1]) - 1
 				currentRow--
 			}
 
 		case termbox.KeyArrowRight:
 			if len(textBuffer) == 0 {
 				break
-			} else if currentCol < len(textBuffer[currentRow]) {
+			} else if currentCol < len(textBuffer[currentRow])-1 {
 				currentCol++
 			} else if currentRow+1 < len(textBuffer) {
 				currentCol = 0
@@ -376,14 +375,14 @@ func handle_key_events(ev termbox.Event) {
 				if currentCol > 0 {
 					currentCol--
 				} else if currentRow > 0 {
-					currentCol = len(textBuffer[currentRow-1])
+					currentCol = len(textBuffer[currentRow-1]) - 1
 					currentRow--
 				}
 
 			case 'l':
 				if len(textBuffer) == 0 {
 					break
-				} else if currentCol < len(textBuffer[currentRow]) {
+				} else if currentCol < len(textBuffer[currentRow])-1 {
 					currentCol++
 				} else if currentRow+1 < len(textBuffer) {
 					currentCol = 0
@@ -463,6 +462,8 @@ func display_text_buffer() {
 
 			// display the text buffer content
 			if txtBufRow < linesCount && txtBufCol < len(textBuffer[txtBufRow]) {
+				s := string(textBuffer[txtBufRow][txtBufCol])
+				_ = fmt.Sprintf("s is :%s", s)
 				if textBuffer[txtBufRow][txtBufCol] != '\t' {
 					termbox.SetChar(col, row, textBuffer[txtBufRow][txtBufCol])
 				} else {
@@ -472,9 +473,6 @@ func display_text_buffer() {
 				termbox.SetCell(LINE_NUMBER_COL_WIDTH, row, rune('~'), termbox.ColorBlue, termbox.ColorDefault)
 			}
 		}
-
-		// new line at the end of each row
-		termbox.SetChar(col, row, rune('\n'))
 	}
 }
 
@@ -575,7 +573,7 @@ func read_file(filename string) {
 
 	for scanner.Scan() {
 		textBuffer = append(textBuffer, []rune{})
-		line = scanner.Text()
+		line = scanner.Text() // this does not read the \n
 		l = len(line)
 
 		for i := 0; i < l; i++ {
@@ -610,10 +608,10 @@ func write_file(filename string) {
 
 		for col := 0; col < cols; col++ {
 			w.WriteRune(textBuffer[row][col])
-			if col == cols-1 && textBuffer[row][col] != '\n' {
-				w.WriteRune('\n')
-			}
 		}
+		// since we do not read the \n in read_file
+		// and we do not insert \n to the textbuff
+		w.WriteRune('\n')
 	}
 	w.Flush()
 }
