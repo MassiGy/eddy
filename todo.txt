@@ -1,5 +1,4 @@
 # Basic
-- Add a keylog message to the status bar
 - Add wrapping mechanism
 - Add a prompt like feature where we can get user input
 - Maybe set fallback file to stdin if no filename is passed

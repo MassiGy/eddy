@@ -44,7 +44,7 @@ var textBuffer = [][]rune{}
 var modified bool = false
 var err_message string
 var info_message string
-var whichkey_message string
+var keylog_message string = "	"
 var current_mode mode
 
 // read/write to file
@@ -259,24 +259,29 @@ func handle_key_events(ev termbox.Event) {
 
 		/* MANAGING MODES */
 		case termbox.KeyCtrlQ:
+			keylog_message = "Ctrl+q"
 			QUIT = true
 			return
 
 		case termbox.KeyEsc:
+			keylog_message = "Esc"
 			current_mode = NORMAL
 
 		/*  NAVIGATION  */
 		case termbox.KeyArrowDown:
+			keylog_message = "Down"
 			if currentRow < len(textBuffer)-1 {
 				currentRow++
 			}
 
 		case termbox.KeyArrowUp:
+			keylog_message = "Up"
 			if currentRow > 0 {
 				currentRow--
 			}
 
 		case termbox.KeyArrowLeft:
+			keylog_message = "Left"
 			if currentCol > 0 {
 				currentCol--
 			} else if currentRow > 0 {
@@ -285,6 +290,7 @@ func handle_key_events(ev termbox.Event) {
 			}
 
 		case termbox.KeyArrowRight:
+			keylog_message = "Right"
 			if len(textBuffer) == 0 {
 				break
 			} else if currentCol < len(textBuffer[currentRow])-1 {
@@ -295,19 +301,24 @@ func handle_key_events(ev termbox.Event) {
 			}
 
 		case termbox.KeyHome:
+			keylog_message = "Start"
 			currentCol = 0
 
 		case termbox.KeyEnd:
+			keylog_message = "End"
 			currentCol = len(textBuffer[currentRow])
 
 		case termbox.KeyPgup:
+			keylog_message = "PgUp"
 			currentRow = 0
 
 		case termbox.KeyPgdn:
+			keylog_message = "PgDown"
 			currentRow = len(textBuffer) - 1
 
 		/* DELIMETERS */
 		case termbox.KeyTab:
+			keylog_message = "Tab"
 			if current_mode == INSERT {
 				for i := 0; i < 4; i++ {
 					insert_character(rune(' '))
@@ -316,18 +327,21 @@ func handle_key_events(ev termbox.Event) {
 			}
 
 		case termbox.KeySpace:
+			keylog_message = "Space"
 			if current_mode == INSERT {
 				insert_character(rune(' '))
 				modified = true
 			}
 
 		case termbox.KeyEnter:
+			keylog_message = "Enter"
 			if current_mode == INSERT {
 				insert_newline()
 				modified = true
 			}
 
 		case termbox.KeyBackspace, termbox.KeyBackspace2:
+			keylog_message = "BackSpace"
 			if current_mode == INSERT {
 				delete_character()
 				modified = true
@@ -335,29 +349,36 @@ func handle_key_events(ev termbox.Event) {
 
 		/* I/O on the file */
 		case termbox.KeyCtrlS:
+			keylog_message = "Ctrl+s"
 			write_file(source_file)
 			modified = false
 
 		case termbox.KeyCtrlR:
+			keylog_message = "Ctrl+r"
+			textBuffer = nil
 			read_file(source_file)
 			modified = false
 			current_mode = NORMAL
 
 		/* EDITOR EXTRA CONTROL */
 		case termbox.KeyCtrlN:
+			keylog_message = "Ctrl+n"
 			SHOW_LINE_NUMBERS = !SHOW_LINE_NUMBERS
 
 		case termbox.KeyCtrlW:
+			keylog_message = "Ctrl+w"
 			WRAP = !WRAP
 		}
 
 	} else {
 		// printable characters
 		if current_mode == INSERT {
+			keylog_message = "	"
 			insert_character(ev.Ch)
 			modified = true
 
 		} else if current_mode == NORMAL {
+			keylog_message = string(ev.Ch)
 
 			switch ev.Ch {
 
@@ -510,8 +531,8 @@ func display_status_bar() {
 	}
 
 	current_file := source_file
-	if len(source_file) > 8 {
-		current_file = source_file[:8] + "..."
+	if len(source_file) > 10 {
+		current_file = source_file[:10] + "~"
 	}
 
 	left_side_content := ""
@@ -534,7 +555,7 @@ func display_status_bar() {
 	info_msg_len := len(info_message)
 
 	if err_msg_len == 0 && info_msg_len == 0 {
-		left_side_content += fmt.Sprintf(" File: %s%s\t line:%d,col:%d | %s %s", modified_mark, current_file, currentRow, currentCol, line_numbers_mark, wrap_mark)
+		left_side_content += fmt.Sprintf(" %s%s \t%d,%d \t%s %s", modified_mark, current_file, currentRow, currentCol, line_numbers_mark, wrap_mark)
 		llen = len(left_side_content)
 		for i := 0; i < llen; i++ {
 			termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorBlack, termbox.ColorWhite)
@@ -555,7 +576,8 @@ func display_status_bar() {
 		info_message = ""
 	}
 
-	right_side_content := binary_name + " " + version
+	// right_side_content := binary_name + " " + version
+	right_side_content := fmt.Sprintf("%s\t", keylog_message)
 	rlen := len(right_side_content)
 
 	padding := COLS - llen - rlen
