@@ -1,5 +1,5 @@
 # Basic
-- Add wrapping mechanism
+- Fix the f motion on the edges
 - Add a prompt like feature where we can get user input
 - Add a homescreen to the editor showing all the shortcuts
 - Maybe set fallback file to stdin if no filename is passed
@@ -8,6 +8,3 @@
 - Add undo/redo capabilities.
 - Add a copy/paste buffer.
 - Add a highlighting functionality.
-
-# Bonus
-- Add x motion and a delete_current_char() routine

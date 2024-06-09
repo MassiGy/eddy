@@ -491,12 +491,6 @@ func is_delimiter(ch rune) bool {
 }
 func wrap() {
 
-	l := len(textBuffer)
-
-	if textBuffer == nil || l == 0 {
-		return
-	}
-
 	wrappedTextBuffer := [][]rune{}
 	for _, row := range textBuffer {
 		rowLen := len(row)
