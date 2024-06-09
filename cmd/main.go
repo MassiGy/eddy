@@ -375,6 +375,7 @@ func handle_key_events(ev termbox.Event) {
 				current_mode = PROMPT
 
 			case 'r': // reload
+				textBuffer = nil
 				read_file(source_file)
 				current_mode = NORMAL
 				modified = false
@@ -423,11 +424,6 @@ func handle_key_events(ev termbox.Event) {
 
 			case 'd':
 				delete_word(-1)
-				modified = true
-
-			case 'x':
-				delete_character()
-				current_mode = INSERT
 				modified = true
 
 			case 'C':
