@@ -1,5 +1,13 @@
+# Binary
 bin/*
+
+# Envs
 .env
 .env.local
 
+# Test files
 test.txt
+
+# Debug files
+*debug*
+cmd/*debug*
