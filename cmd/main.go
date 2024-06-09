@@ -24,7 +24,7 @@ const (
 
 // constants
 var QUIT bool = false
-var WRAP bool = false
+var WRAP bool = true //TODO: add this to a config file
 var WRAP_AFTER int = 60
 var ROWS, COLS int
 var SAVE_TO_FILE_MAX_ERROR_COUNT int = 3
@@ -39,8 +39,6 @@ var offsetX, offsetY int
 
 // buffer
 var textBuffer = [][]rune{}
-var wrappedTextBuffer = [][]rune{}
-var nonWrappedTextBuffer = [][]rune{}
 
 // status bar flags
 var modified bool = false
@@ -367,15 +365,6 @@ func handle_key_events(ev termbox.Event) {
 			keylog_message = "Ctrl+n"
 			SHOW_LINE_NUMBERS = !SHOW_LINE_NUMBERS
 
-		case termbox.KeyCtrlY:
-			keylog_message = "Ctrl+w"
-			WRAP = !WRAP
-			wrap()
-			if WRAP {
-				textBuffer = wrappedTextBuffer
-			} else {
-				textBuffer = nonWrappedTextBuffer
-			}
 		}
 
 	} else {
@@ -502,22 +491,14 @@ func is_delimiter(ch rune) bool {
 }
 func wrap() {
 
-	// update the nonWrappedTextBuffer
-	nonWrappedTextBuffer = [][]rune{}
-	l := len(nonWrappedTextBuffer)
-	for _, row := range textBuffer {
-		rowCopy := make([]rune, len(row))
-		copy(rowCopy, row)
-		nonWrappedTextBuffer = append(nonWrappedTextBuffer, rowCopy)
-		l++
-	}
+	l := len(textBuffer)
 
-	if nonWrappedTextBuffer == nil || l == 0 {
+	if textBuffer == nil || l == 0 {
 		return
 	}
 
-	wrappedTextBuffer = [][]rune{}
-	for _, row := range nonWrappedTextBuffer {
+	wrappedTextBuffer := [][]rune{}
+	for _, row := range textBuffer {
 		rowLen := len(row)
 
 		if rowLen >= WRAP_AFTER {
@@ -551,6 +532,7 @@ func wrap() {
 			wrappedTextBuffer = append(wrappedTextBuffer, row)
 		}
 	}
+	textBuffer = wrappedTextBuffer
 }
 func display_text_buffer() {
 	var row, col int
@@ -752,6 +734,10 @@ func run_editor() {
 		} else {
 			LINE_NUMBER_COL_WIDTH = 0
 		}
+		if WRAP {
+			wrap() // wrap & update text buffer
+		}
+
 		COLS, ROWS = termbox.Size()   // re-evaluate each time to synch with size change
 		ROWS--                        // for the status bar
 		COLS -= LINE_NUMBER_COL_WIDTH // for the linenumber column
