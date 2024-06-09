@@ -1,6 +1,6 @@
 # Basic
-- Uniformize how \n are handled (do we read them, do we write them to buffer?)
 - Add wrapping mechanism
+- Fix the relaod feature
 - Add a prompt like feature where we can get user input
 - Maybe set fallback file to stdin if no filename is passed
 

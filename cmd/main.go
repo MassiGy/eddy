@@ -115,12 +115,34 @@ func delete_character() {
 
 		currentCol = l
 
-	} else if l <= 1 {
-		// end of single character line
+	} else if currentCol > 0 && l <= 1 { /*TODO: is this really a valid case, compare to the one below*/
+		// end of single character line or empty line
 
 		textBuffer = slices.Delete(textBuffer, currentRow, currentRow+1)
 
 		if currentRow > 0 {
+			currentCol = len(textBuffer[currentRow-1])
+			currentRow--
+		} else {
+			currentCol = 0
+			currentRow = 0
+		}
+	} else if currentCol == 0 && l <= 1 {
+		// start of single character line or empty line
+
+		var ch rune
+		if l != 0 {
+			// capture the current line char
+			ch = textBuffer[currentRow][currentCol]
+		}
+
+		textBuffer = slices.Delete(textBuffer, currentRow, currentRow+1)
+
+		if currentRow > 0 {
+			if l != 0 {
+				// append captured char to prev line
+				textBuffer[currentRow-1] = append(textBuffer[currentRow-1], ch)
+			}
 			currentCol = len(textBuffer[currentRow-1])
 			currentRow--
 		} else {
@@ -194,7 +216,7 @@ func jump_word(direction int) {
 			return
 		} else { // == -1
 			if currentRow > 0 {
-				currentCol = len(textBuffer[currentRow-1])
+				currentCol = max(0, len(textBuffer[currentRow-1])-1)
 				currentRow--
 			}
 			return
@@ -203,7 +225,7 @@ func jump_word(direction int) {
 
 	if currentCol <= 1 && direction == -1 {
 		if currentRow > 0 {
-			currentCol = len(textBuffer[currentRow-1]) - 1
+			currentCol = max(0, len(textBuffer[currentRow-1])-1)
 			currentRow--
 		}
 		return
