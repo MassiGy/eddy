@@ -258,7 +258,7 @@ func handle_key_events(ev termbox.Event) {
 			if currentCol > 0 {
 				currentCol--
 			} else if currentRow > 0 {
-				currentCol = len(textBuffer[currentRow-1]) - 1
+				currentCol = max(0, len(textBuffer[currentRow-1])-1)
 				currentRow--
 			}
 
@@ -375,7 +375,7 @@ func handle_key_events(ev termbox.Event) {
 				if currentCol > 0 {
 					currentCol--
 				} else if currentRow > 0 {
-					currentCol = len(textBuffer[currentRow-1]) - 1
+					currentCol = max(0, len(textBuffer[currentRow-1])-1)
 					currentRow--
 				}
 
@@ -462,8 +462,6 @@ func display_text_buffer() {
 
 			// display the text buffer content
 			if txtBufRow < linesCount && txtBufCol < len(textBuffer[txtBufRow]) {
-				s := string(textBuffer[txtBufRow][txtBufCol])
-				_ = fmt.Sprintf("s is :%s", s)
 				if textBuffer[txtBufRow][txtBufCol] != '\t' {
 					termbox.SetChar(col, row, textBuffer[txtBufRow][txtBufCol])
 				} else {
