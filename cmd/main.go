@@ -68,7 +68,14 @@ func insert_character(ch rune) {
 		textBuffer = append(textBuffer, []rune{ch})
 		return
 	}
-	textBuffer[currentRow] = slices.Insert(textBuffer[currentRow], currentCol, ch)
+
+	l := len(textBuffer[currentRow])
+	line := make([]rune, l+1)
+	copy(line[:currentCol], textBuffer[currentRow][:currentCol])
+	line[currentCol] = ch
+	copy(line[(currentCol+1):], textBuffer[currentRow][currentCol:])
+
+	textBuffer[currentRow] = line
 	currentCol++
 }
 func insert_newline() {
@@ -229,7 +236,7 @@ func jump_word(direction int) {
 			return
 		} else { // == -1
 			if currentRow > 0 {
-				currentCol = max(0, len(textBuffer[currentRow-1])-1)
+				currentCol = max(0, len(textBuffer[currentRow-1]))
 				currentRow--
 			}
 			return
@@ -238,7 +245,7 @@ func jump_word(direction int) {
 
 	if currentCol <= 1 && direction == -1 {
 		if currentRow > 0 {
-			currentCol = max(0, len(textBuffer[currentRow-1])-1)
+			currentCol = max(0, len(textBuffer[currentRow-1]))
 			currentRow--
 		}
 		return
@@ -250,7 +257,7 @@ func jump_word(direction int) {
 		return
 	}
 
-	word_len := 0
+	word_len := 1
 	for i := currentCol + direction; i >= 0 && i < l; i += direction {
 		if word_len > 0 && is_delimiter(textBuffer[currentRow][i]) {
 			break
@@ -258,7 +265,7 @@ func jump_word(direction int) {
 		word_len++
 	}
 	if word_len > 0 && direction == -1 {
-		currentCol -= word_len
+		currentCol = max(0, currentCol-word_len)
 	} else if word_len > 0 && direction == 1 {
 		currentCol += word_len
 	}
@@ -328,6 +335,10 @@ func handle_key_events(ev termbox.Event) {
 		case termbox.KeyPgdn:
 			keylog_message = "PgDown"
 			currentRow = len(textBuffer) - 1
+
+		/* MOUSE NAVIGATION */
+		case termbox.MouseLeft, termbox.MouseRight, termbox.MouseRelease:
+			keylog_message = fmt.Sprintf("Mouse Left:%d,%d", ev.MouseY, ev.MouseX)
 
 		/* DELIMETERS */
 		case termbox.KeyTab:
@@ -729,7 +740,7 @@ func run_editor() {
 		} else {
 			LINE_NUMBER_COL_WIDTH = 0
 		}
-		if WRAP {
+		if WRAP && current_mode == NORMAL {
 			wrap() // wrap & update text buffer
 		}
 
