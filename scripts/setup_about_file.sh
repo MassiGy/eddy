@@ -6,12 +6,11 @@ if [ ! -f  $HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/targets ]; then
     figlet -W "         eddy" > $HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/about;
     echo "
 
-        Eddy is a vim like editor, meaning that we have multiple motions and 
-        modes. We currently support INSERT, NORMAL, VISUAL and PROMPT modes.
+        Eddy is a vim like editor, meaning that we have multiple motions 
+        and modes. We currently support INSERT, NORMAL and PROMPT mode.
 
         INSERT is for updating the text buffer.
         NORMAL is mainly for navigation and editing using motions.
-        VISUAL is for selecting chunks of texts.
         PROMPT is for the command mode, it is like the ':' mode of vim.
 
     
@@ -21,7 +20,6 @@ if [ ! -f  $HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/targets ]; then
         ---------------------------------------------------------------
         NORMAL          i           insert      enter to INSERT mode.
         NORMAL          e           edit        enter to INSERT mode.
-        NORMAL          v           visual      enter to VISUAL mode.
         NORMAL          p           prompt      enter to PROMPT mode.
         NORMAL          ?           prompt      enter to PROMPT mode.
         NORMAL          :           prompt      enter to PROMPT mode.

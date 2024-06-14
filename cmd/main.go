@@ -18,7 +18,6 @@ type mode int
 const (
 	NORMAL mode = iota
 	INSERT
-	VISUAL
 	PROMPT
 )
 
@@ -399,9 +398,6 @@ func handle_key_events(ev termbox.Event) {
 			case 'e', 'i':
 				current_mode = INSERT
 
-			case 'v':
-				current_mode = VISUAL
-
 			case 'p', '?', ':':
 				current_mode = PROMPT
 
@@ -580,8 +576,8 @@ func display_status_bar() {
 	}
 
 	current_file := source_file
-	if len(source_file) > 10 {
-		current_file = source_file[:10] + "~"
+	if len(source_file) > 15 {
+		current_file = source_file[:15] + "~"
 	}
 
 	left_side_content := ""
@@ -590,8 +586,6 @@ func display_status_bar() {
 		left_side_content += "INSERT"
 	case NORMAL:
 		left_side_content += "NORMAL"
-	case VISUAL:
-		left_side_content += "VISUAL"
 	case PROMPT:
 		left_side_content += "PROMPT"
 	}
