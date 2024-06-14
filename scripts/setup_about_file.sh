@@ -3,7 +3,7 @@
 if [ ! -f  $HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/targets ]; then
     echo "Creating $HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/about file";
 
-    figlet -W "eddy" > $HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/about;
+    figlet -W "         eddy" > $HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/about;
     echo "
 
         Eddy is a vim like editor, meaning that we have multiple motions and 
@@ -52,5 +52,5 @@ if [ ! -f  $HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/targets ]; then
         ALL             PgUp        page up     goto top of file.
         ALL             PgDown      page down   goto end of file.
     
-    ">$HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/about;
+    ">>$HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/about;
 fi

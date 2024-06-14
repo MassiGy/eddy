@@ -25,7 +25,7 @@ const (
 // constants
 var QUIT bool = false
 var WRAP bool = true //TODO: add this to a config file
-var WRAP_AFTER int = 60
+var WRAP_AFTER int = 80
 var ROWS, COLS int
 var SAVE_TO_FILE_MAX_ERROR_COUNT int = 3
 var UNKOWN_SOURCE_FILENAME string = "nofile"
@@ -715,9 +715,17 @@ func run_editor() {
 		source_file = os.Args[1]
 		read_file(source_file)
 	} else {
-		source_file = UNKOWN_SOURCE_FILENAME
-		info_message = "Input file messing."
-		textBuffer = append(textBuffer, []rune{})
+		about_file_path := fmt.Sprintf("%s/.config/%s-%s/about", os.Getenv("HOME"), binary_name, version)
+
+		// check for about file existance
+		if _, err := os.Stat(about_file_path); err == nil {
+			source_file = about_file_path
+			read_file(source_file)
+		} else {
+			source_file = UNKOWN_SOURCE_FILENAME
+			info_message = "Input file messing."
+			textBuffer = append(textBuffer, []rune{})
+		}
 	}
 	currentCol = LINE_NUMBER_COL_WIDTH
 	currentRow = 0
