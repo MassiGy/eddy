@@ -19,3 +19,58 @@ user input and you redraw to the screen the updated state.
 - Eddy v0.1.0 screenshot, ( a very minimal editor, not designed for mainstream use, only experimental )
 
 ![Eddy v0.1.0 screenshot](./eddy_v0.1.0_snapshot.png "Eddy v0.1.0")
+
+
+
+## Setup & Installation ( Using Go tools )
+
+```sh
+
+    # make sure to install figlet (for some use these commands)
+    [[ "$HOSTNAME" == "debian" ]] && sudo apt install figlet
+    [[ "$HOSTNAME" == "ubuntu" ]] && sudo apt install figlet
+    [[ "$HOSTNAME" == "fedora" ]] && sudo dnf install figlet
+
+
+    # build the binary (this requires Go to be installed )
+    make build
+
+    # setup the environment and mv the binary to ~/.local/share
+    make install
+
+    # (Optional) you can create a symlink to the binary
+    # to /usr/local/bin, or directly copy the binary to it.
+
+```
+
+## Setup & Installation ( Without Go tools )
+
+First, download from Github the latest release. 
+
+```sh
+
+    # clone the repo
+    git clone <repo_url>
+
+    # download from github the latest release
+
+    # move the binary of the release to the project /bin directory
+
+    # run make install 
+    make install
+
+```
+
+
+## Uninstall 
+
+```sh
+
+    # just run the following command to remove all the used
+    # directroies and the ~/.local/share binary.
+    make uninstall
+
+    # (NOTE) extra setup from your part should be undone by
+    # yourself.
+
+```

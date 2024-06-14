@@ -7,3 +7,10 @@
 - Add undo/redo capabilities.
 - Add a copy/paste buffer.
 - Add a highlighting functionality.
+
+# Bonus
+- If we want to give the ability to the user to toggle wrap whenever he 
+wants, we can do so by inserting \n to the text buffer and registering 
+them to a list that will contain all the \n indecies that were added.
+The issues is what would happen if the user removes or edit the text in 
+some major way, the indecies would probably be obselet! 
