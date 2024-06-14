@@ -18,7 +18,7 @@ user input and you redraw to the screen the updated state.
 
 - Eddy v0.1.0 screenshot, ( a very minimal editor, not designed for mainstream use, only experimental )
 
-![Eddy v0.1.0 screenshot](./eddy_v0.1.0_snapshot.png "Eddy v0.1.0")
+![Eddy screenshot](./eddy_screenshot.png "Eddy v0.1.x")
 
 
 
