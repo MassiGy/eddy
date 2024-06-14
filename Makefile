@@ -34,9 +34,14 @@ make_bin_shared:
 	@echo "you can run the program by using this command: ${BINARY_NAME}"
 
 setup: 
-	@echo $(git tag | tail -1) > VERSION 
 	@echo ""
 	@echo "Setting up the config and local shared directories, and the appropriate files."
+
+	bash ./scripts/update_version_using_git_tags.sh
+	$(eval VERSION=$(shell cat ./VERSION))
+	$(eval CONFIG_DIR=${HOME}/.config/${BINARY_NAME}-${VERSION})
+	$(eval SHARED_DIR=${HOME}/.local/share/${BINARY_NAME}-${VERSION})
+
 	bash ./scripts/setup_config_dir.sh 
 	bash ./scripts/setup_shared_dir.sh 
 
