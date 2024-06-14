@@ -731,6 +731,8 @@ func run_editor() {
 		}
 		if WRAP && current_mode == NORMAL {
 			wrap() // wrap & update text buffer
+			offsetX = 0
+			currentCol = min(currentCol, len(textBuffer[currentRow]))
 		}
 
 		COLS, ROWS = termbox.Size()   // re-evaluate each time to synch with size change
