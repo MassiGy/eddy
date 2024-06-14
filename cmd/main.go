@@ -68,14 +68,7 @@ func insert_character(ch rune) {
 		textBuffer = append(textBuffer, []rune{ch})
 		return
 	}
-
-	l := len(textBuffer[currentRow])
-	line := make([]rune, l+1)
-	copy(line[:currentCol], textBuffer[currentRow][:currentCol])
-	line[currentCol] = ch
-	copy(line[(currentCol+1):], textBuffer[currentRow][currentCol:])
-
-	textBuffer[currentRow] = line
+	textBuffer[currentRow] = slices.Insert(textBuffer[currentRow], currentCol, ch)
 	currentCol++
 }
 func insert_newline() {
@@ -335,10 +328,6 @@ func handle_key_events(ev termbox.Event) {
 		case termbox.KeyPgdn:
 			keylog_message = "PgDown"
 			currentRow = len(textBuffer) - 1
-
-		/* MOUSE NAVIGATION */
-		case termbox.MouseLeft, termbox.MouseRight, termbox.MouseRelease:
-			keylog_message = fmt.Sprintf("Mouse Left:%d,%d", ev.MouseY, ev.MouseX)
 
 		/* DELIMETERS */
 		case termbox.KeyTab:
@@ -757,7 +746,6 @@ func run_editor() {
 		display_text_buffer()
 
 		termbox.SetCursor(currentCol+LINE_NUMBER_COL_WIDTH-offsetX, currentRow-offsetY)
-
 		termbox.Flush()
 
 		evt := termbox.PollEvent()
