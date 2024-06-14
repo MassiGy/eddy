@@ -3,7 +3,6 @@
 
 #  Advanced
 - Add undo/redo capabilities.
-- Add a copy/paste buffer.
 - Add a highlighting functionality.
 
 # Bonus
