@@ -3,7 +3,6 @@
 
 #  Advanced
 - Add undo/redo capabilities.
-- Add a highlighting functionality.
 
 # Bonus
 - If we want to give the ability to the user to toggle wrap whenever he 
