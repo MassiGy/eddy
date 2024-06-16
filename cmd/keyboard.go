@@ -229,18 +229,20 @@ func handle_key_events(ev termbox.Event) {
 
 			case 'u':
 				undo()
+				modified = true
 				undo_redo_counter = 0
 
 			case 'U':
 				redo()
+				modified = true
 
 				// first redo (keep stack for potential subsequent redos)
-				if strings.Compare(last_key, "U") != 0 && undo_redo_counter == 0 {
+				if strings.Compare(last_modification_key, "U") != 0 && undo_redo_counter == 0 {
 					undo_redo_counter++
 
 					// not first redo & last motion was not redo
 					// (reset stack since buffer might be changed)
-				} else if strings.Compare(last_key, "U") != 0 {
+				} else if strings.Compare(last_modification_key, "U") != 0 {
 					redo_stack = nil // clear redo stack
 					undo_redo_counter = 0
 				}
@@ -251,5 +253,12 @@ func handle_key_events(ev termbox.Event) {
 	if len(textBuffer) > 0 && currentCol > len(textBuffer[currentRow]) {
 		currentCol = len(textBuffer[currentRow])
 	}
-	last_key = string(ev.Ch) // update last key
+
+	if !is_configuration_evt(ev) &&
+		!is_io_evt(ev) &&
+		!is_navigation_evt(ev) {
+
+		last_modification_key = string(ev.Ch) // update last key
+	}
+
 }

@@ -37,10 +37,10 @@ var (
 	offsetX, offsetY       int
 
 	// buffers
-	textBuffer = [][]rune{}
-	undo_stack = [][][]rune{}
-	redo_stack = [][][]rune{}
-	last_key   string
+	textBuffer            = [][]rune{}
+	undo_stack            = [][][]rune{}
+	redo_stack            = [][][]rune{}
+	last_modification_key string
 
 	// status bar flags
 	modified       bool = false

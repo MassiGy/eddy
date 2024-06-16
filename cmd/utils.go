@@ -1,6 +1,10 @@
 package main
 
-import "slices"
+import (
+	"slices"
+
+	"github.com/nsf/termbox-go"
+)
 
 func is_delimiter(ch rune) bool {
 	return ch == ' ' ||
@@ -33,6 +37,71 @@ func is_delimiter(ch rune) bool {
 		ch == '<' ||
 		ch == '>' ||
 		ch == '/'
+}
+
+func is_navigation_evt(ev termbox.Event) bool {
+	res := false
+	if ev.Ch == 0 {
+		switch ev.Key {
+		case
+			termbox.KeyArrowDown,
+			termbox.KeyArrowLeft,
+			termbox.KeyArrowRight,
+			termbox.KeyArrowUp:
+			res = true
+
+		case
+			termbox.KeyHome,
+			termbox.KeyEnd,
+			termbox.KeyPgup,
+			termbox.KeyPgdn:
+			res = true
+		}
+
+	} else {
+		switch ev.Ch {
+		case 'k', 'l', 'h', 'j', 'f', 'b':
+			res = current_mode == NORMAL
+		}
+	}
+	return res
+}
+
+func is_io_evt(ev termbox.Event) bool {
+	res := false
+	if ev.Ch == 0 {
+		switch ev.Key {
+		case
+			termbox.KeyCtrlS, termbox.KeyCtrlR:
+			res = true
+		}
+
+	} else {
+		switch ev.Ch {
+		case 'r', 'w':
+			res = current_mode == NORMAL
+		}
+	}
+
+	return res
+}
+
+func is_configuration_evt(ev termbox.Event) bool {
+	res := false
+	if ev.Ch == 0 {
+		switch ev.Key {
+		case
+			termbox.KeyCtrlN:
+			res = true
+		}
+
+	} else {
+		switch ev.Ch {
+		// nothing for now
+		}
+	}
+
+	return res
 }
 
 func insert_character(ch rune) {
