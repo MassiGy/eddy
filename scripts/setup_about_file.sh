@@ -43,8 +43,8 @@ if [ ! -f  $HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/targets ]; then
         NORMAL          A           vim.A       insert-in line end.
         NORMAL          o           vim.o       insert newline below.
         NORMAL          O           vim.O       insert newline above.
-        NORMAL          y           vim.\"+yy   copy line to sysclip.
-        NORMAL          p           vim.\"+p    paste line from sysclip.
+        NORMAL          y           vim.\"+yy    copy line to sysclip.
+        NORMAL          p           vim.\"+p     paste line from sysclip.
 
         NORMAL          u           vim.u       undo (infinite)
         NORMAL          U           vim.CtrlR   redo (infinite)

@@ -14,8 +14,9 @@ info:
 clean:
 	rm -rf bin/*
 
-bin: 
-	go build -o bin/${BINARY_NAME} cmd/main.go 
+bindynamic: 
+
+	go build -ldflags "-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}" -o bin/${BINARY_NAME} cmd/*.go 
 
 binstatic:
 	rm -rf bin/*
