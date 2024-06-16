@@ -214,6 +214,18 @@ func handle_key_events(ev termbox.Event) {
 				currentCol = 0
 				current_mode = INSERT
 
+			case 'o':
+				currentCol = len(textBuffer[currentRow])
+				insert_newline()
+				current_mode = INSERT
+				modified = true
+
+			case 'O':
+				currentCol = 0
+				insert_newline()
+				current_mode = INSERT
+				modified = true
+
 			case 'D':
 				delete_word(1)
 				modified = true
