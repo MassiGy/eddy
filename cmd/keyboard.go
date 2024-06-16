@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	// this is specific to this file,
-	// it basically tracks how many
+	// this basically tracks how many
 	// redos have been perfomed since
-	// the last undo
+	// the last undo(useful for getting
+	// the infinit undo redo)
 	undo_redo_counter int = 0
 )
 
@@ -29,6 +29,11 @@ func handle_key_events(ev termbox.Event) {
 
 		case termbox.KeyEsc:
 			keylog_message = "Esc"
+			if current_mode == INSERT {
+				if last_modification_key != "" {
+					register_curr_state()
+				}
+			}
 			current_mode = NORMAL
 
 		/*  NAVIGATION  */
@@ -156,6 +161,7 @@ func handle_key_events(ev termbox.Event) {
 				return
 
 			case 'e', 'i':
+				last_modification_key = "ignore"
 				current_mode = INSERT
 
 			case '?', ':':
@@ -223,6 +229,8 @@ func handle_key_events(ev termbox.Event) {
 			case 'O':
 				currentCol = 0
 				insert_newline()
+
+				currentRow--
 				current_mode = INSERT
 				modified = true
 
@@ -287,9 +295,12 @@ func handle_key_events(ev termbox.Event) {
 
 	if !is_configuration_evt(ev) &&
 		!is_io_evt(ev) &&
-		!is_navigation_evt(ev) {
+		!is_navigation_evt(ev) &&
+		strings.Compare(last_modification_key, "ignore") != 0 {
 
 		last_modification_key = string(ev.Ch) // update last key
+	} else {
+		last_modification_key = ""
 	}
 
 }

@@ -8,12 +8,12 @@ import (
 
 var (
 	completions = map[rune]rune{
-		'\'': '\'',
-		'`':  '`',
-		'"':  '"',
-		'{':  '}',
-		'(':  ')',
-		'[':  ']',
+		// '\'': '\'', // annoying when not coding
+		'`': '`',
+		'"': '"',
+		'{': '}',
+		'(': ')',
+		'[': ']',
 	}
 	completed bool = false
 )
@@ -97,6 +97,24 @@ func is_io_evt(ev termbox.Event) bool {
 		}
 	}
 
+	return res
+}
+
+func is_mode_switch_evt(ev termbox.Event) bool {
+	res := false
+	if ev.Ch == 0 {
+		switch ev.Key {
+		case
+			termbox.KeyEsc:
+			res = true
+		}
+
+	} else {
+		switch ev.Ch {
+		case 'i', 'e':
+			res = current_mode == NORMAL
+		}
+	}
 	return res
 }
 
