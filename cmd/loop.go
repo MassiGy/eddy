@@ -35,6 +35,8 @@ func run_editor() {
 	currentRow = 0
 	current_mode = NORMAL
 
+	register_curr_state() // first snapshot
+
 	for !QUIT {
 		if SHOW_LINE_NUMBERS {
 			LINE_NUMBER_COL_WIDTH = 2 + len(fmt.Sprintf("%d", len(textBuffer)))

@@ -30,15 +30,17 @@ var (
 	QUIT                  bool = false
 	ROWS, COLS            int
 	LINE_NUMBER_COL_WIDTH int
-	LINES_COUNT           int
 	SHOW_LINE_NUMBERS     bool = true
 
 	// in buffer cursor info
 	currentCol, currentRow int
 	offsetX, offsetY       int
 
-	// buffer
+	// buffers
 	textBuffer = [][]rune{}
+	undo_stack = [][][]rune{}
+	redo_stack = [][][]rune{}
+	last_key   string
 
 	// status bar flags
 	modified       bool = false

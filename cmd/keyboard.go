@@ -1,6 +1,18 @@
 package main
 
-import "github.com/nsf/termbox-go"
+import (
+	"strings"
+
+	"github.com/nsf/termbox-go"
+)
+
+var (
+	// this is specific to this file,
+	// it basically tracks how many
+	// redos have been perfomed since
+	// the last undo
+	undo_redo_counter int = 0
+)
 
 func handle_key_events(ev termbox.Event) {
 
@@ -76,6 +88,7 @@ func handle_key_events(ev termbox.Event) {
 				}
 				modified = true
 			}
+			register_curr_state()
 
 		case termbox.KeySpace:
 			keylog_message = "Space"
@@ -83,6 +96,7 @@ func handle_key_events(ev termbox.Event) {
 				insert_character(rune(' '))
 				modified = true
 			}
+			register_curr_state()
 
 		case termbox.KeyEnter:
 			keylog_message = "Enter"
@@ -90,6 +104,7 @@ func handle_key_events(ev termbox.Event) {
 				insert_newline()
 				modified = true
 			}
+			register_curr_state()
 
 		case termbox.KeyBackspace, termbox.KeyBackspace2:
 			keylog_message = "BackSpace"
@@ -97,6 +112,7 @@ func handle_key_events(ev termbox.Event) {
 				delete_character()
 				modified = true
 			}
+			register_curr_state()
 
 		/* I/O on the file */
 		case termbox.KeyCtrlS:
@@ -110,6 +126,7 @@ func handle_key_events(ev termbox.Event) {
 			read_file(source_file)
 			modified = false
 			current_mode = NORMAL
+			register_curr_state()
 
 		/* EDITOR EXTRA CONTROL */
 		case termbox.KeyCtrlN:
@@ -124,6 +141,9 @@ func handle_key_events(ev termbox.Event) {
 			keylog_message = "	"
 			insert_character(ev.Ch)
 			modified = true
+			if is_delimiter(ev.Ch) {
+				register_curr_state()
+			}
 
 		} else if current_mode == NORMAL {
 			keylog_message = string(ev.Ch)
@@ -137,7 +157,7 @@ func handle_key_events(ev termbox.Event) {
 			case 'e', 'i':
 				current_mode = INSERT
 
-			case 'p', '?', ':':
+			case '?', ':':
 				current_mode = PROMPT
 
 			case 'r': // reload
@@ -145,6 +165,7 @@ func handle_key_events(ev termbox.Event) {
 				read_file(source_file)
 				current_mode = NORMAL
 				modified = false
+				register_curr_state()
 
 			case 'w':
 				write_file(source_file)
@@ -187,20 +208,42 @@ func handle_key_events(ev termbox.Event) {
 			case 'D':
 				delete_word(1)
 				modified = true
+				register_curr_state()
 
 			case 'd':
 				delete_word(-1)
 				modified = true
+				register_curr_state()
 
 			case 'C':
 				delete_word(1)
 				current_mode = INSERT
 				modified = true
+				register_curr_state()
 
 			case 'c':
 				delete_word(-1)
 				current_mode = INSERT
 				modified = true
+				register_curr_state()
+
+			case 'u':
+				undo()
+				undo_redo_counter = 0
+
+			case 'U':
+				redo()
+
+				// first redo (keep stack for potential subsequent redos)
+				if strings.Compare(last_key, "U") != 0 && undo_redo_counter == 0 {
+					undo_redo_counter++
+
+					// not first redo & last motion was not redo
+					// (reset stack since buffer might be changed)
+				} else if strings.Compare(last_key, "U") != 0 {
+					redo_stack = nil // clear redo stack
+					undo_redo_counter = 0
+				}
 			}
 
 		}
@@ -208,4 +251,5 @@ func handle_key_events(ev termbox.Event) {
 	if len(textBuffer) > 0 && currentCol > len(textBuffer[currentRow]) {
 		currentCol = len(textBuffer[currentRow])
 	}
+	last_key = string(ev.Ch) // update last key
 }

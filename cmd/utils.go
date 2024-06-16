@@ -137,3 +137,53 @@ func delete_character() {
 		}
 	}
 }
+func register_curr_state() {
+	blen := len(textBuffer)
+	text_buffer_snapshot := [][]rune{}
+
+	for i := 0; i < blen; i++ {
+		llen := len(textBuffer[i])
+		text_buffer_snapshot = append(text_buffer_snapshot, make([]rune, llen))
+		copy(text_buffer_snapshot[i], textBuffer[i])
+	}
+
+	undo_stack = append(undo_stack, text_buffer_snapshot)
+
+	// clear the redo stack
+	redo_stack = nil
+}
+
+func undo() {
+	// get topmost state from stack
+	uslen := len(undo_stack)
+	if uslen < 2 {
+		return
+	}
+	undo_state := undo_stack[uslen-1]
+	undo_stack = slices.Delete(undo_stack, uslen-1, uslen)
+
+	// update buffer state
+	if uslen-2 >= 0 {
+		textBuffer = undo_stack[uslen-2]
+	}
+
+	// push poped state to redo stack
+	redo_stack = append(redo_stack, undo_state)
+}
+
+func redo() {
+	// get topmost state from stack
+	rslen := len(redo_stack)
+	if rslen == 0 {
+		return
+	}
+	redo_state := redo_stack[rslen-1]
+	redo_stack = slices.Delete(redo_stack, rslen-1, rslen)
+
+	// update buffer state
+	textBuffer = redo_state
+
+	// push poped state to undo stack
+	undo_stack = append(undo_stack, redo_state)
+
+}

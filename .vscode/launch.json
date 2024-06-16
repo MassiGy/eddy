@@ -12,7 +12,7 @@
             "console": "integratedTerminal",
             "showGlobalVariables": true,
             "args": ["../test.txt"],
-            "program": "${workspaceFolder}/cmd/main.go"
+            "program": "${workspaceFolder}/cmd/"
         }
     ]
 }
