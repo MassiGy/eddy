@@ -87,10 +87,9 @@ func display_text_buffer() {
 				} else {
 					termbox.SetCell(col, row, rune(' '), termbox.ColorDefault, termbox.ColorDefault)
 				}
+			} else if txtBufRow >= linesCount { // for unreached lines print ~ as in vim
+				termbox.SetCell(LINE_NUMBER_COL_WIDTH, row, rune('~'), termbox.ColorBlue, termbox.ColorDefault)
 			}
-			// } else if txtBufRow >= linesCount { // for unreached lines print ~ as in vim
-			// 	termbox.SetCell(LINE_NUMBER_COL_WIDTH, row, rune('~'), termbox.ColorBlue, termbox.ColorDefault)
-			// }
 		}
 	}
 }

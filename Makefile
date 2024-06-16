@@ -24,7 +24,7 @@ binstatic:
 	$(eval VERSION=$(shell cat ./VERSION))
 
 	@echo "Building a static executable..."
-	CGO_ENABLED=0 go build -a -tags netgo,osusergo -ldflags "-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags '-static -s -w'" -o bin/${BINARY_NAME} cmd/main.go
+	go build -a -tags netgo,osusergo -ldflags "-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags '-static -s -w'" -o bin/${BINARY_NAME} cmd/*.go
 
 run: 
 	./bin/${BINARY_NAME}
