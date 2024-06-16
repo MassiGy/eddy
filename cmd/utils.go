@@ -6,6 +6,18 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
+var (
+	completions = map[rune]rune{
+		'\'': '\'',
+		'`':  '`',
+		'"':  '"',
+		'{':  '}',
+		'(':  ')',
+		'[':  ']',
+	}
+	completed bool = false
+)
+
 func is_delimiter(ch rune) bool {
 	return ch == ' ' ||
 		ch == '\t' ||
@@ -27,6 +39,8 @@ func is_delimiter(ch rune) bool {
 		ch == ')' ||
 		ch == '{' ||
 		ch == '}' ||
+		ch == '[' ||
+		ch == ']' ||
 		ch == '@' ||
 		ch == '#' ||
 		ch == '~' ||
@@ -111,6 +125,13 @@ func insert_character(ch rune) {
 	}
 	textBuffer[currentRow] = slices.Insert(textBuffer[currentRow], currentCol, ch)
 	currentCol++
+
+	if compl, ok := completions[ch]; ok && !completed {
+		completed = true // mark as complete first!
+		insert_character(compl)
+	} else {
+		completed = false
+	}
 }
 
 func insert_newline() {
