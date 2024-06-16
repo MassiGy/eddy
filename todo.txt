@@ -10,4 +10,9 @@ memory ( this is a far-fetched optimisation since we do clear the redo
 stack by assiging nil to it, so the garbage collector should prevent us
 from being a memory hog.)
 
+# Bonus
+- Add multikey motions like dw and dd.
+- Add sed integration.
+- Add highlighting.
+
 
