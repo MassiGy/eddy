@@ -14,18 +14,15 @@ info:
 clean:
 	rm -rf bin/*
 
-bindynamic: 
-
-	go build -ldflags "-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}" -o bin/${BINARY_NAME} cmd/*.go 
-
-binstatic:
+binary: 
 	rm -rf bin/*
 
 	bash ./scripts/update_version_using_git_tags.sh
 	$(eval VERSION=$(shell cat ./VERSION))
 
-	@echo "Building a static executable..."
-	go build -a -tags netgo,osusergo -ldflags "-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags '-static -s -w'" -o bin/${BINARY_NAME} cmd/*.go
+	@echo "Building a the executable..."
+	go build -ldflags "-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}" -o bin/${BINARY_NAME} cmd/*.go 
+
 
 run: 
 	./bin/${BINARY_NAME}
