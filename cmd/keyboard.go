@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/nsf/termbox-go"
+	"golang.design/x/clipboard"
 )
 
 var (
@@ -205,6 +206,14 @@ func handle_key_events(ev termbox.Event) {
 			case 'b':
 				jump_word(-1)
 
+			case 'A':
+				currentCol = len(textBuffer[currentRow])
+				current_mode = INSERT
+
+			case 'I':
+				currentCol = 0
+				current_mode = INSERT
+
 			case 'D':
 				delete_word(1)
 				modified = true
@@ -245,6 +254,16 @@ func handle_key_events(ev termbox.Event) {
 				} else if strings.Compare(last_modification_key, "U") != 0 {
 					redo_stack = nil // clear redo stack
 					undo_redo_counter = 0
+				}
+
+			case 'y':
+				clipboard.Write(clipboard.FmtText, []byte(string(textBuffer[currentRow])))
+
+			case 'p':
+				bytes := clipboard.Read(clipboard.FmtText)
+				l := len(bytes)
+				for i := 0; i < l; i++ {
+					insert_character(rune(bytes[i]))
 				}
 			}
 
