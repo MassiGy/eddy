@@ -20,7 +20,6 @@ if [ ! -f  $HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/targets ]; then
         ---------------------------------------------------------------
         NORMAL          i           insert      enter to INSERT mode.
         NORMAL          e           edit        enter to INSERT mode.
-        NORMAL          p           prompt      enter to PROMPT mode.
         NORMAL          ?           prompt      enter to PROMPT mode.
         NORMAL          :           prompt      enter to PROMPT mode.
 
@@ -30,15 +29,25 @@ if [ ! -f  $HOME/.config/$(cat ./BINARY_NAME)-$(cat ./VERSION)/targets ]; then
 
         NORMAL          h           vim.h       next character.
         NORMAL          l           vim.l       prev character.
-        NORMAL          j           vim.j       go to next line.
-        NORMAL          h           vim.h       go to prev line.
-        NORMAL          f           vim.b       go to next word.
-        NORMAL          b           vim.b       go to prev word.
+        NORMAL          j           vim.j       goto next line.
+        NORMAL          h           vim.h       goto prev line.
+        NORMAL          f           vim.b       goto next word.
+        NORMAL          b           vim.b       goto prev word.
 
         NORMAL          d           vim.db      delete prev word.
         NORMAL          D           vim.dw      delete next word.
         NORMAL          c           vim.cb      change prev word.
         NORMAL          C           vim.cw      change next word.
+
+        NORMAL          I           vim.I       insert-in line start.
+        NORMAL          A           vim.A       insert-in line end.
+        NORMAL          o           vim.o       insert newline below.
+        NORMAL          O           vim.O       insert newline above.
+        NORMAL          y           vim.\"+yy   copy line to sysclip.
+        NORMAL          p           vim.\"+p    paste line from sysclip.
+
+        NORMAL          u           vim.u       undo (infinite)
+        NORMAL          U           vim.CtrlR   redo (infinite)
 
         ALL             Ctrl+s      write       save the file. 
         ALL             Ctrl+r      reload      reload the file.
