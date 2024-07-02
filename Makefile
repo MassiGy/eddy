@@ -1,70 +1,151 @@
-VERSION:=$(shell cat ./VERSION)
 BINARY_NAME:=$(shell cat ./BINARY_NAME)
-CONFIG_DIR:=${HOME}/.config/${BINARY_NAME}-${VERSION}
-SHARED_DIR:=${HOME}/.local/share/${BINARY_NAME}-${VERSION}
 AUTHOR:="Massiles Ghernaout"
 
-info: 
-	bash ./scripts/update_version_using_git_tags.sh
-	$(eval VERSION=$(shell cat ./VERSION))
+TAG=$(shell git tag | tail -1)
+ifneq ($(TAG),)
+    VERSION:=${TAG}
+else 
+    VERSION:=$(shell cat ./VERSION)
+endif
 
+
+ifeq ($(OS),Windows_NT)
+    MACHINE = windows
+    ifeq ($(PROCESSOR_ARCHITECTURE),AMD64)
+        ARCH = amd64
+    endif
+    ifeq ($(PROCESSOR_ARCHITECTURE),x86)
+        ARCH = 386
+    endif
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        MACHINE = linux
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        MACHINE = darwin
+    endif
+    UNAME_P := $(shell uname -p)
+    ifeq ($(UNAME_P),x86_64)
+        ARCH = amd64
+    endif
+    ifneq ($(filter %86,$(UNAME_P)),)
+        ARCH = 386
+    endif
+    ifneq ($(filter arm%,$(UNAME_P)),)
+        ARCH = arm
+    endif
+endif
+
+
+
+
+# [ PRODUCTION ]
+info: 
 	@echo "Project: ${BINARY_NAME}@${VERSION}"
 	@echo "Author: ${AUTHOR}"
-
-clean:
-	rm -rf bin/*
+	@echo "Current OS: ${MACHINE}"
+	@echo "Current architecture: ${ARCH}"
 
 binary: 
+
 	rm -rf bin/*
+	@echo "Building the executable..."
 
-	bash ./scripts/update_version_using_git_tags.sh
-	$(eval VERSION=$(shell cat ./VERSION))
+	ifeq ($(OS),Windows_NT)
+		GOOS=${MACHINE} GOARCH=${ARCH} \
+		go build -ldflags \
+		"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}.exe -extldflags=-static"\
+		-o bin/${BINARY_NAME}.exe \
+		cmd/*.go 
+	else 
+		GOOS=${MACHINE} GOARCH=${ARCH} \
+		go build -ldflags \
+		"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static"\
+		-o bin/${BINARY_NAME} \
+		cmd/*.go 
+	endif
 
-	@echo "Building a the executable..."
-	go build -ldflags "-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}" -o bin/${BINARY_NAME} cmd/*.go 
 
 
+# [ RELEASES ]
+
+win32_x86_release: 
+	rm -rf releases/win32_x86/*
+
+	GOOS=windows GOARCH=386 \
+	go build -ldflags \
+	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}.exe -extldflags=-static" \
+	-o releases/win32_x86/${BINARY_NAME}.exe \
+	cmd/*.go 
+
+	zip -r releases/win32_x86.zip releases/win32_x86/*
+
+
+win32_amd64_release: 
+	rm -rf releases/win32_amd64/*
+
+	GOOS=windows GOARCH=amd64 \
+	go build -ldflags \
+	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}.exe -extldflags=-static" \
+	-o releases/win32_amd64/${BINARY_NAME}.exe \
+	cmd/*.go 
+
+	zip -r releases/win32_amd64.zip releases/win32_amd64/*
+
+
+linux_x86_release:
+	rm -rf releases/linux_x86/*
+
+	GOOS=linux GOARCH=386 \
+	go build -ldflags \
+	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static" \
+	-o releases/linux_x86/${BINARY_NAME} \
+	cmd/*.go 
+
+	zip -r releases/linux_x86.zip releases/linux_x86/*
+
+linux_amd64_release:
+	rm -rf releases/linux_amd64/*
+
+	GOOS=linux GOARCH=amd64 \
+	go build -ldflags \
+	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static" \
+	-o releases/linux_amd64/${BINARY_NAME} \
+	cmd/*.go 
+
+	zip -r releases/linux_amd64.zip releases/linux_amd64/*
+
+# https://stackoverflow.com/questions/65881808/how-can-i-cross-compile-to-darwin-386-from-linux
+# darwin/32bit support was dropped since go 1.15, if you want to get this release, use a go version prior to 1.14
+osx_x86_release: 
+	rm -rf releases/osx_x86/*
+
+	GOOS=darwin GOARCH=386 \
+	go build -ldflags \
+	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static"\
+	-o releases/osx_x86/${BINARY_NAME} \
+	cmd/*.go 
+
+	zip -r releases/osx_x86.zip releases/osx_x86/*
+
+osx_amd64_release: 
+	rm -rf releases/osx_amd64/*
+
+	GOOS=darwin GOARCH=amd64 \
+	go build -ldflags \
+	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static" \
+	-o releases/osx_amd64/${BINARY_NAME} \
+	cmd/*.go 
+
+	zip -r releases/osx_amd64.zip releases/osx_amd64/*
+
+releases: win32_x86_release win32_amd64_release linux_x86_release linux_amd64_release osx_amd64_release
+
+# [ DEVELOPEMENT ]
+clean:
+	rm -rf bin/*
 run: 
 	./bin/${BINARY_NAME}
-
 runsrc:
-	ENV=dev DEBUG=true go run ./cmd/main.go
-
-make_bin_shared: 
-	bash ./scripts/update_version_using_git_tags.sh
-	$(eval VERSION=$(shell cat ./VERSION))
-	$(eval SHARED_DIR=${HOME}/.local/share/${BINARY_NAME}-${VERSION})
-
-	cp $(shell pwd)/bin/${BINARY_NAME} ${SHARED_DIR}/${BINARY_NAME};
-	@echo "The ${BINARY_NAME} binary file can be found in ${SHARED_DIR}";
-	@echo ""
-	bash ./scripts/setup_aliases.sh;
-	@echo "Added ${BINARY_NAME} aliases to .bashrc|.bash_aliases|.zshrc|.zsh_aliases";
-	@echo "you can run the program by using this command: ${BINARY_NAME}"
-
-setup: 
-	@echo ""
-	@echo "Setting up the config and local shared directories, and the appropriate files."
-
-	bash ./scripts/setup_config_dir.sh 
-	bash ./scripts/setup_shared_dir.sh 
-
-	bash ./scripts/setup_about_file.sh
-
-install: setup make_bin_shared  
-
-rm_local_bin: 
-	bash ./scripts/update_version_using_git_tags.sh
-	$(eval VERSION=$(shell cat ./VERSION))
-	$(eval SHARED_DIR=${HOME}/.local/share/${BINARY_NAME}-${VERSION})
-
-	rm -rf ${SHARED_DIR}/${BINARY_NAME}
-
-uninstall: rm_local_bin 
-	bash ./scripts/update_version_using_git_tags.sh
-	$(eval VERSION=$(shell cat ./VERSION))
-	$(eval CONFIG_DIR=${HOME}/.config/${BINARY_NAME}-${VERSION})
-	$(eval SHARED_DIR=${HOME}/.local/share/${BINARY_NAME}-${VERSION})
-
-	rm -rf ${CONFIG_DIR}
-	rm -rf ${SHARED_DIR}
+	GOOS=${MACHINE} GOARCH=amd64 ENV=dev DEBUG=true go run ./cmd/main.go

@@ -50,6 +50,7 @@ func is_delimiter(ch rune) bool {
 		ch == '$' ||
 		ch == '<' ||
 		ch == '>' ||
+		ch == '|' ||
 		ch == '/'
 }
 
@@ -139,6 +140,7 @@ func is_configuration_evt(ev termbox.Event) bool {
 func insert_character(ch rune) {
 	if len(textBuffer) == 0 {
 		textBuffer = append(textBuffer, []rune{ch})
+		currentCol++
 		return
 	}
 	textBuffer[currentRow] = slices.Insert(textBuffer[currentRow], currentCol, ch)

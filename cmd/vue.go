@@ -87,7 +87,7 @@ func display_text_buffer() {
 				} else {
 					termbox.SetCell(col, row, rune(' '), termbox.ColorDefault, termbox.ColorDefault)
 				}
-			} else if txtBufRow >= linesCount { // for unreached lines print ~ as in vim
+			} else if txtBufRow > linesCount { // for unreached lines print ~ as in vim
 				termbox.SetCell(LINE_NUMBER_COL_WIDTH, row, rune('~'), termbox.ColorBlue, termbox.ColorDefault)
 			}
 		}
@@ -133,30 +133,37 @@ func display_status_bar() {
 	err_msg_len := len(err_message)
 	info_msg_len := len(info_message)
 
-	if err_msg_len == 0 && info_msg_len == 0 {
-		left_side_content += fmt.Sprintf(" %s%s \t%d,%d \t%s %s", modified_mark, current_file, currentRow, currentCol, line_numbers_mark, wrap_mark)
-		llen = len(left_side_content)
-		for i := 0; i < llen; i++ {
-			termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorBlack, termbox.ColorWhite)
-		}
-	} else if err_msg_len > 0 {
-		left_side_content += fmt.Sprintf(" Error: %s\t", err_message)
+	if err_msg_len > 0 {
+		left_side_content = fmt.Sprintf(" Error: %s%s", err_message, TAB)
 		llen = len(left_side_content)
 		for i := 0; i < llen; i++ {
 			termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorWhite, termbox.ColorRed)
 		}
 		err_message = ""
 	} else if info_msg_len > 0 {
-		left_side_content += fmt.Sprintf(" Info: %s\t", info_message)
+		left_side_content = fmt.Sprintf(" Info: %s%s", info_message, TAB)
 		llen = len(left_side_content)
 		for i := 0; i < llen; i++ {
 			termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorWhite, termbox.ColorBlue)
 		}
 		info_message = ""
+	} else {
+		if current_mode == INSERT || current_mode == NORMAL {
+			left_side_content += fmt.Sprintf(" %s%s %s%d,%d %s%s %s", modified_mark, current_file, TAB, currentRow, currentCol, TAB, line_numbers_mark, wrap_mark)
+			llen = len(left_side_content)
+			for i := 0; i < llen; i++ {
+				termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorBlack, termbox.ColorWhite)
+			}
+		} else if current_mode == PROMPT {
+			left_side_content += fmt.Sprintf(" %s%s %s%d,%d %s%s %s", modified_mark, current_file, TAB, currentRow, currentCol, TAB, line_numbers_mark, wrap_mark)
+			llen = len(left_side_content)
+			for i := 0; i < llen; i++ {
+				termbox.SetCell(i, ROWS, rune(left_side_content[i]), termbox.ColorBlack, termbox.ColorWhite)
+			}
+		}
 	}
 
-	// right_side_content := binary_name + " " + version
-	right_side_content := fmt.Sprintf("%s\t", keylog_message)
+	right_side_content := fmt.Sprintf("%s%s", keylog_message, TAB)
 	rlen := len(right_side_content)
 
 	padding := COLS - llen - rlen

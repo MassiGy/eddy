@@ -1,18 +1,9 @@
 # Basic
-- Add a prompt like feature where we can get user input.
 
 #  Advanced
-- Hash the current state before adding it to the undo stack, this will 
-allow us to not add another snapshot of the current state if the 
-previously added one has the same hash a.k.a the same content.
-- Add TTL for the snapshots to make sure that we do not overload the 
-memory ( this is a far-fetched optimisation since we do clear the redo
-stack by assiging nil to it, so the garbage collector should prevent us
-from being a memory hog.)
 
 # Bonus
 - Add multikey motions like dw and dd.
-- Add sed integration.
 - Add highlighting.
 
 

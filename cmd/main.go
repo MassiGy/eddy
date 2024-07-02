@@ -1,13 +1,7 @@
 package main
 
 import (
-	"os"
-)
-
-var (
-	// binary info(assigned at build time)
-	version     string
-	binary_name string
+	"runtime"
 )
 
 type mode int
@@ -35,29 +29,49 @@ var (
 	// in buffer cursor info
 	currentCol, currentRow int
 	offsetX, offsetY       int
+	main_curr_col          int
+	main_curr_row          int
+	prompt_mode_curr_col   int
+	prompt_mode_curr_row   int
 
 	// buffers
-	textBuffer            = [][]rune{}
-	undo_stack            = [][][]rune{}
-	redo_stack            = [][][]rune{}
+	textBuffer         [][]rune
+	main_buffer        = [][]rune{}
+	prompt_mode_buffer = [][]rune{}
+
+	// undo redo
+	undo_stack             [][][]rune
+	main_undo_stack        = [][][]rune{}
+	prompt_mode_undo_stack = [][][]rune{}
+
+	redo_stack             [][][]rune
+	main_redo_stack        = [][][]rune{}
+	prompt_mode_redo_stack = [][][]rune{}
+
 	last_modification_key string
 
 	// status bar flags
 	modified       bool = false
 	err_message    string
 	info_message   string
-	keylog_message string = "	"
+	keylog_message string = ""
 	current_mode   mode
 
 	// read/write to file
 	source_file                  string
 	SAVE_TO_FILE_MAX_ERROR_COUNT int = 3
+
+	// OS based divergences
+	TAB string = ""
 )
 
 func main() {
-	if os.Getenv("ENV") == "dev" {
-		binary_name = "eddy"
-		version = "v0.1.0"
+	if runtime.GOOS == "windows" {
+		TAB = "    " // 4 spaces
+		keylog_message = "    "
+	} else {
+		TAB = "\t" // linux & darwin
+		keylog_message = "\t"
 	}
 	run_editor()
 }

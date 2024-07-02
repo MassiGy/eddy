@@ -29,12 +29,18 @@ func handle_key_events(ev termbox.Event) {
 
 		case termbox.KeyEsc:
 			keylog_message = "Esc"
-			if current_mode == INSERT {
+			if current_mode != NORMAL {
 				if last_modification_key != "" {
 					register_curr_state()
 				}
 			}
+
 			current_mode = NORMAL
+			currentCol = main_curr_col
+			currentRow = main_curr_row
+			textBuffer = main_buffer
+			undo_stack = main_undo_stack
+			redo_stack = main_redo_stack
 
 		/*  NAVIGATION  */
 		case termbox.KeyArrowDown:
@@ -62,7 +68,7 @@ func handle_key_events(ev termbox.Event) {
 			keylog_message = "Right"
 			if len(textBuffer) == 0 {
 				break
-			} else if currentCol < len(textBuffer[currentRow])-1 {
+			} else if currentCol < len(textBuffer[currentRow]) {
 				currentCol++
 			} else if currentRow+1 < len(textBuffer) {
 				currentCol = 0
@@ -88,37 +94,48 @@ func handle_key_events(ev termbox.Event) {
 		/* DELIMETERS */
 		case termbox.KeyTab:
 			keylog_message = "Tab"
-			if current_mode == INSERT {
+			if current_mode != NORMAL {
 				for i := 0; i < 4; i++ {
 					insert_character(rune(' '))
 				}
 				modified = true
+				register_curr_state()
 			}
-			register_curr_state()
 
 		case termbox.KeySpace:
 			keylog_message = "Space"
-			if current_mode == INSERT {
+			if current_mode != NORMAL {
 				insert_character(rune(' '))
 				modified = true
+				register_curr_state()
 			}
-			register_curr_state()
+		case termbox.KeyCtrl6:
+			if current_mode != NORMAL {
+				insert_character(rune('|'))
+				modified = true
+				register_curr_state()
+			}
 
 		case termbox.KeyEnter:
 			keylog_message = "Enter"
 			if current_mode == INSERT {
 				insert_newline()
 				modified = true
+			} else if current_mode == PROMPT {
+				if len(prompt_mode_buffer[0]) > 0 {
+					prompt_mode_buffer = eval(string(prompt_mode_buffer[0]))
+					textBuffer = prompt_mode_buffer
+				}
 			}
 			register_curr_state()
 
 		case termbox.KeyBackspace, termbox.KeyBackspace2:
 			keylog_message = "BackSpace"
-			if current_mode == INSERT {
+			if current_mode != NORMAL {
 				delete_character()
 				modified = true
+				register_curr_state()
 			}
-			register_curr_state()
 
 		/* I/O on the file */
 		case termbox.KeyCtrlS:
@@ -143,7 +160,7 @@ func handle_key_events(ev termbox.Event) {
 
 	} else {
 		// printable characters
-		if current_mode == INSERT {
+		if current_mode != NORMAL {
 			keylog_message = "	"
 			insert_character(ev.Ch)
 			modified = true
@@ -166,6 +183,17 @@ func handle_key_events(ev termbox.Event) {
 
 			case '?', ':':
 				current_mode = PROMPT
+				prompt_mode_buffer = [][]rune{}
+				prompt_mode_undo_stack = [][][]rune{}
+				prompt_mode_redo_stack = [][][]rune{}
+				prompt_mode_curr_col = 0
+				prompt_mode_curr_row = 0
+
+				currentCol = prompt_mode_curr_col
+				currentRow = prompt_mode_curr_row
+				textBuffer = prompt_mode_buffer
+				undo_stack = prompt_mode_undo_stack
+				redo_stack = prompt_mode_redo_stack
 
 			case 'r': // reload
 				textBuffer = nil

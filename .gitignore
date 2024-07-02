@@ -11,3 +11,7 @@ test.txt
 # Debug files
 *debug*
 cmd/*debug*
+
+# releases
+releases/*/*
+releases/*.zip

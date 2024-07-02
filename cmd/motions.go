@@ -27,7 +27,10 @@ func delete_word(direction int) {
 		}
 	}
 
-	word_len := 1 // count the current char
+	word_len := 0
+	if direction == 1 { // do not count char under cursor when deleting backwards
+		word_len = 1 // count the current char
+	}
 	for i := currentCol + direction; i >= 0 && i < l; i += direction {
 		if word_len > 0 && is_delimiter(textBuffer[currentRow][i]) {
 			word_len++ // count the space or the \n

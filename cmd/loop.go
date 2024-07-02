@@ -8,6 +8,10 @@ import (
 )
 
 func run_editor() {
+
+	undo_stack = main_undo_stack
+	redo_stack = main_redo_stack
+
 	err := termbox.Init()
 	if err != nil {
 		fmt.Println(err)
@@ -19,19 +23,14 @@ func run_editor() {
 		source_file = os.Args[1]
 		read_file(source_file)
 	} else {
-		about_file_path := fmt.Sprintf("%s/.config/%s-%s/about", os.Getenv("HOME"), binary_name, version)
-
-		// check for about file existance
-		if _, err := os.Stat(about_file_path); err == nil {
-			source_file = about_file_path
-			read_file(source_file)
-		} else {
-			source_file = UNKOWN_SOURCE_FILENAME
-			info_message = "Input file messing."
-			textBuffer = append(textBuffer, []rune{})
-		}
+		textBuffer = get_homescreen_text()
+		source_file = UNKOWN_SOURCE_FILENAME
+		info_message = "Viewing Eddy's Homescreen."
 	}
-	currentCol = LINE_NUMBER_COL_WIDTH
+
+	main_buffer = textBuffer // for the first file read
+
+	currentCol = 0
 	currentRow = 0
 	current_mode = NORMAL
 
@@ -70,6 +69,19 @@ func run_editor() {
 			handle_key_events(evt)
 		case termbox.EventError:
 			return // call defered routines
+		}
+		if current_mode == PROMPT {
+			prompt_mode_buffer = textBuffer
+			prompt_mode_undo_stack = undo_stack
+			prompt_mode_redo_stack = redo_stack
+			prompt_mode_curr_col = currentCol
+			prompt_mode_curr_row = currentRow
+		} else {
+			main_buffer = textBuffer
+			main_undo_stack = undo_stack
+			main_redo_stack = redo_stack
+			main_curr_col = currentCol
+			main_curr_row = currentRow
 		}
 	}
 }
