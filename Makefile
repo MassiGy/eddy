@@ -25,7 +25,7 @@ else
     ifeq ($(UNAME_S),Darwin)
         MACHINE = darwin
     endif
-    UNAME_P := $(shell uname -p)
+    UNAME_P := $(shell arch)
     ifeq ($(UNAME_P),x86_64)
         ARCH = amd64
     endif
@@ -52,19 +52,19 @@ binary:
 	rm -rf bin/*
 	@echo "Building the executable..."
 
-	ifeq ($(OS),Windows_NT)
+ifeq ($(MACHINE),Windows_NT)
 		GOOS=${MACHINE} GOARCH=${ARCH} \
 		go build -ldflags \
 		"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}.exe -extldflags=-static"\
 		-o bin/${BINARY_NAME}.exe \
 		cmd/*.go 
-	else 
+else 
 		GOOS=${MACHINE} GOARCH=${ARCH} \
-		go build -ldflags \
-		"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static"\
+        go build -ldflags \
+        "-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static"\
 		-o bin/${BINARY_NAME} \
 		cmd/*.go 
-	endif
+endif
 
 
 

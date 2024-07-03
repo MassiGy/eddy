@@ -3,8 +3,8 @@ package main
 import (
 	"strings"
 
+	"github.com/atotto/clipboard"
 	"github.com/nsf/termbox-go"
-	"golang.design/x/clipboard"
 )
 
 var (
@@ -305,19 +305,27 @@ func handle_key_events(ev termbox.Event) {
 				}
 
 			case 'y':
-				clipboard.Write(clipboard.FmtText, []byte(string(textBuffer[currentRow])))
+				err := clipboard.WriteAll(string(textBuffer[currentRow]))
+				if err != nil {
+					err_message = "Could not access/writeto sys clipboard."
+				}
 
 			case 'p':
-				bytes := clipboard.Read(clipboard.FmtText)
-				l := len(bytes)
-				for i := 0; i < l; i++ {
-					insert_character(rune(bytes[i]))
+				content, err := clipboard.ReadAll()
+				if err != nil {
+					err_message = "Could not access/read sys clipboard."
 				}
+				l := len(content)
+				for i := 0; i < l; i++ {
+					insert_character(rune(content[i]))
+				}
+				register_curr_state()
 			}
 
 		}
 	}
-	if len(textBuffer) > 0 && currentCol > len(textBuffer[currentRow]) {
+	l := len(textBuffer)
+	if l > 0 && currentCol > len(textBuffer[currentRow]) {
 		currentCol = len(textBuffer[currentRow])
 	}
 
