@@ -148,4 +148,4 @@ clean:
 run: 
 	./bin/${BINARY_NAME}
 runsrc:
-	GOOS=${MACHINE} GOARCH=amd64 ENV=dev DEBUG=true go run ./cmd/main.go
+	GOOS=${MACHINE} GOARCH=${ARCH} ENV=dev DEBUG=true go run ./cmd/*
