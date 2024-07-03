@@ -61,7 +61,7 @@ ifeq ($(MACHINE),Windows_NT)
 else 
 		GOOS=${MACHINE} GOARCH=${ARCH} \
         go build -ldflags \
-        "-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static"\
+        "-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static -s -w"\
 		-o bin/${BINARY_NAME} \
 		cmd/*.go 
 endif
@@ -75,7 +75,7 @@ win32_x86_release:
 
 	GOOS=windows GOARCH=386 \
 	go build -ldflags \
-	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}.exe -extldflags=-static" \
+	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}.exe -extldflags=-static -s -w" \
 	-o releases/win32_x86/${BINARY_NAME}.exe \
 	cmd/*.go 
 
@@ -87,7 +87,7 @@ win32_amd64_release:
 
 	GOOS=windows GOARCH=amd64 \
 	go build -ldflags \
-	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}.exe -extldflags=-static" \
+	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME}.exe -extldflags=-static -s -w" \
 	-o releases/win32_amd64/${BINARY_NAME}.exe \
 	cmd/*.go 
 
@@ -99,7 +99,7 @@ linux_x86_release:
 
 	GOOS=linux GOARCH=386 \
 	go build -ldflags \
-	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static" \
+	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static -s -w" \
 	-o releases/linux_x86/${BINARY_NAME} \
 	cmd/*.go 
 
@@ -110,7 +110,7 @@ linux_amd64_release:
 
 	GOOS=linux GOARCH=amd64 \
 	go build -ldflags \
-	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static" \
+	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static -s -w" \
 	-o releases/linux_amd64/${BINARY_NAME} \
 	cmd/*.go 
 
@@ -123,7 +123,7 @@ osx_x86_release:
 
 	GOOS=darwin GOARCH=386 \
 	go build -ldflags \
-	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static"\
+	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static -s -w"\
 	-o releases/osx_x86/${BINARY_NAME} \
 	cmd/*.go 
 
@@ -134,7 +134,7 @@ osx_amd64_release:
 
 	GOOS=darwin GOARCH=amd64 \
 	go build -ldflags \
-	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static" \
+	"-X main.version=${VERSION} -X main.binary_name=${BINARY_NAME} -extldflags=-static -s -w" \
 	-o releases/osx_amd64/${BINARY_NAME} \
 	cmd/*.go 
 
