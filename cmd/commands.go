@@ -5,7 +5,7 @@ import (
 	"os/exec"
 )
 
-const target_shell = "bash"
+const target_shell = "sh"
 
 func run_command(command string) (string, string, error) {
 	var stdout bytes.Buffer

@@ -122,7 +122,7 @@ func handle_key_events(ev termbox.Event) {
 				insert_newline()
 				modified = true
 			} else if current_mode == PROMPT {
-				if len(prompt_mode_buffer[0]) > 0 {
+				if len(prompt_mode_buffer) > 0 && len(prompt_mode_buffer[0]) > 0 {
 					prompt_mode_buffer = eval(string(prompt_mode_buffer[0]))
 					textBuffer = prompt_mode_buffer
 				}

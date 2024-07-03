@@ -36,6 +36,10 @@ func read_file(filename string) {
 }
 
 func write_file(filename string) {
+	if filename == UNKOWN_SOURCE_FILENAME {
+		err_message = "Not saved (no file passed)."
+		return
+	}
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
 	if err != nil {
 		err_message = "Could not open file."
